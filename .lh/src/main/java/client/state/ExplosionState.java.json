@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/main/java/client/state/ExplosionState.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1764828486249,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764830378879,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,5 @@\n-package client.state;\r\n+package com.client.state;\r\n \r\n public class ExplosionState {\r\n \r\n     public int x;\r\n"
+                }
+            ],
+            "date": 1764828486249,
+            "name": "Commit-0",
+            "content": "package client.state;\r\n\r\npublic class ExplosionState {\r\n\r\n    public int x;\r\n    public int y;\r\n\r\n    public boolean center;\r\n    public boolean up;\r\n    public boolean down;\r\n    public boolean left;\r\n    public boolean right;\r\n\r\n    public double lifeTime;   // server yg menghitung durasi\r\n\r\n    public ExplosionState(int x, int y) {\r\n        this.x = x;\r\n        this.y = y;\r\n    }\r\n}\r\n"
+        }
+    ]
+}

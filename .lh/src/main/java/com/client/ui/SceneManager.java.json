@@ -1,0 +1,26 @@
+{
+    "sourceFile": "src/main/java/com/client/ui/SceneManager.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1764831883099,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764834190503,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,35 +1,52 @@\n-package com.client.ui;\r\n+package com.myclient.ui;\r\n \r\n+import com.myclient.render.GameCanvas;\r\n import javafx.scene.Scene;\r\n+import javafx.scene.layout.StackPane;\r\n import javafx.stage.Stage;\r\n+import java.util.function.Consumer;\r\n \r\n public class SceneManager {\r\n     private static Stage stage;\r\n-    \r\n+\r\n     public static void setStage(Stage s) {\r\n         stage = s;\r\n     }\r\n \r\n+    public static void toLogin(Consumer<String> onConnect) {\r\n+        LoginScene login = new LoginScene(onConnect);\r\n+        stage.setScene(login.getScene());\r\n+        stage.setTitle(\"Bomber Client - Login\");\r\n+    }\r\n+\r\n     public static void toLobby() {\r\n         LobbyScene lobby = new LobbyScene();\r\n         stage.setScene(lobby.getScene());\r\n         stage.setTitle(\"Bomber Game - Lobby\");\r\n     }\r\n \r\n-    public static void toRoom(String roomName, boolean isHost) {\r\n-        RoomScene room = new RoomScene(roomName, isHost);\r\n+    public static void toRoom(String roomName) {\r\n+        RoomScene room = new RoomScene(roomName);\r\n         stage.setScene(room.getScene());\r\n         stage.setTitle(\"Room: \" + roomName);\r\n     }\r\n \r\n-    public static void toGame() {\r\n-        // Disini kita akan inisialisasi GameCanvas (Gameplay dimulai)\r\n-        // Kita butuh dummy player/input handler di sini nantinya untuk integrasi penuh\r\n-        // Untuk sekarang, logic ini ada di App.java, nanti kita pindahkan.\r\n+    public static void toGame(GameCanvas canvas) {\r\n+        // Bungkus canvas dalam StackPane biar rapi\r\n+        StackPane root = new StackPane(canvas);\r\n+        \r\n+        // Listener keyboard harus dipasang di Scene barunya\r\n+        Scene gameScene = new Scene(root);\r\n+        \r\n+        // Hubungkan InputHandler (Logic ini nanti diintegrasikan di App.java / InputSender)\r\n+        // gameScene.setOnKeyPressed(...) \r\n+        \r\n+        // Resize Canvas otomatis\r\n+        gameScene.widthProperty().addListener((obs, oldV, newV) -> canvas.setWidth(newV.doubleValue()));\r\n+        gameScene.heightProperty().addListener((obs, oldV, newV) -> canvas.setHeight(newV.doubleValue()));\r\n+\r\n+        stage.setScene(gameScene);\r\n+        stage.setTitle(\"Bomber Game - Playing\");\r\n+        canvas.requestFocus(); // Penting biar bisa terima input keyboard\r\n     }\r\n-    \r\n-    // Method helper untuk mengganti scene secara custom (misal dari App.java)\r\n-    public static void setScene(Scene scene) {\r\n-        stage.setScene(scene);\r\n-    }\r\n }\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1764834201194,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,7 @@\n package com.myclient.ui;\r\n \r\n-import com.myclient.render.GameCanvas;\r\n+import com.client.render.GameCanvas;\r\n import javafx.scene.Scene;\r\n import javafx.scene.layout.StackPane;\r\n import javafx.stage.Stage;\r\n import java.util.function.Consumer;\r\n"
+                }
+            ],
+            "date": 1764831883099,
+            "name": "Commit-0",
+            "content": "package com.client.ui;\r\n\r\nimport javafx.scene.Scene;\r\nimport javafx.stage.Stage;\r\n\r\npublic class SceneManager {\r\n    private static Stage stage;\r\n    \r\n    public static void setStage(Stage s) {\r\n        stage = s;\r\n    }\r\n\r\n    public static void toLobby() {\r\n        LobbyScene lobby = new LobbyScene();\r\n        stage.setScene(lobby.getScene());\r\n        stage.setTitle(\"Bomber Game - Lobby\");\r\n    }\r\n\r\n    public static void toRoom(String roomName, boolean isHost) {\r\n        RoomScene room = new RoomScene(roomName, isHost);\r\n        stage.setScene(room.getScene());\r\n        stage.setTitle(\"Room: \" + roomName);\r\n    }\r\n\r\n    public static void toGame() {\r\n        // Disini kita akan inisialisasi GameCanvas (Gameplay dimulai)\r\n        // Kita butuh dummy player/input handler di sini nantinya untuk integrasi penuh\r\n        // Untuk sekarang, logic ini ada di App.java, nanti kita pindahkan.\r\n    }\r\n    \r\n    // Method helper untuk mengganti scene secara custom (misal dari App.java)\r\n    public static void setScene(Scene scene) {\r\n        stage.setScene(scene);\r\n    }\r\n}"
+        }
+    ]
+}

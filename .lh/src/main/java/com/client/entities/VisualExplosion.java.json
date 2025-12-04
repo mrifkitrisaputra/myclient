@@ -1,0 +1,26 @@
+{
+    "sourceFile": "src/main/java/com/client/entities/VisualExplosion.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1764832020997,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764835295536,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -33,9 +33,9 @@\n         \r\n         hAnimation = new Image[4];\r\n         vAnimation = new Image[4];\r\n         for (int i = 0; i < 4; i++) {\r\n-            hAnimation[i] = new Image(getClass().getResourceAsStream(\"/com/client/assets/explosion/e_horizontal\" + (i+1) + \".png\"), tileSize, tileSize, false, false);\r\n+            hAnimation[i] = new Image(getClass().getResourceAsStream(\"/com/client/assets/explosion/e_horizontal\" + (i+1) + \".png\"), tileSize, tileSize, false, false);\r\n             vAnimation[i] = new Image(getClass().getResourceAsStream(\"/com/client/assets/explosion/e_vertical\" + (i+1) + \".png\"), tileSize, tileSize, false, false);\r\n         }\r\n     }\r\n \r\n"
+                },
+                {
+                    "date": 1764835307421,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -28,9 +28,9 @@\n         this.centerY = startY;\r\n         this.parts = serverParts; // Terima daftar koordinat dari server\r\n \r\n         // Load Asset\r\n-        centerImg = new Image(getClass().getResourceAsStream(\"/com/client/assets/explosion/e_largeexplosion1.png\"), tileSize, tileSize, false, false);\r\n+        centerImg = new Image(getClass().getResourceAsStream(\"/com/client/assets/explosion/e_largeexplosion1.png\"), tileSize, tileSize, false, false);\r\n         \r\n         hAnimation = new Image[4];\r\n         vAnimation = new Image[4];\r\n         for (int i = 0; i < 4; i++) {\r\n"
+                }
+            ],
+            "date": 1764832020997,
+            "name": "Commit-0",
+            "content": "package com.client.entities;\r\n\r\nimport javafx.scene.canvas.GraphicsContext;\r\nimport javafx.scene.image.Image;\r\nimport java.util.List;\r\n\r\npublic class VisualExplosion {\r\n    // Data visual murni\r\n    public static record ExplosionPart(int x, int y, boolean isVertical) {}\r\n\r\n    private final int centerX, centerY;\r\n    private final List<ExplosionPart> parts;\r\n    \r\n    // Animasi\r\n    private final Image centerImg;\r\n    private final Image[] hAnimation; \r\n    private final Image[] vAnimation; \r\n\r\n    private float animTimer = 0;\r\n    private int frameIndex = 0;\r\n    private final int totalFrames = 4; \r\n    private final int tileSize = 32;\r\n\r\n    // Constructor menerima parts yang sudah dihitung Server\r\n    public VisualExplosion(int startX, int startY, List<ExplosionPart> serverParts) {\r\n        this.centerX = startX;\r\n        this.centerY = startY;\r\n        this.parts = serverParts; // Terima daftar koordinat dari server\r\n\r\n        // Load Asset\r\n        centerImg = new Image(getClass().getResourceAsStream(\"/com/client/assets/explosion/e_largeexplosion1.png\"), tileSize, tileSize, false, false);\r\n        \r\n        hAnimation = new Image[4];\r\n        vAnimation = new Image[4];\r\n        for (int i = 0; i < 4; i++) {\r\n            hAnimation[i] = new Image(getClass().getResourceAsStream(\"/com/client/assets/explosion/e_horizontal\" + (i+1) + \".png\"), tileSize, tileSize, false, false);\r\n            vAnimation[i] = new Image(getClass().getResourceAsStream(\"/com/client/assets/explosion/e_vertical\" + (i+1) + \".png\"), tileSize, tileSize, false, false);\r\n        }\r\n    }\r\n\r\n    public void update(double dt) {\r\n        // Hanya update animasi api membesar/mengecil\r\n        float timePerFrame = 0.8f / totalFrames; \r\n        animTimer += dt;\r\n        \r\n        if (animTimer >= timePerFrame) {\r\n            animTimer = 0;\r\n            frameIndex++;\r\n            if (frameIndex >= totalFrames) frameIndex = totalFrames - 1; \r\n        }\r\n    }\r\n\r\n    public void render(GraphicsContext g) {\r\n        // Render Pusat\r\n        g.drawImage(centerImg, centerX * tileSize, centerY * tileSize);\r\n\r\n        // Render Bagian Api (Daftar koordinat dari Server)\r\n        for (ExplosionPart part : parts) {\r\n            Image sprite = part.isVertical ? vAnimation[frameIndex] : hAnimation[frameIndex];\r\n            g.drawImage(sprite, part.x * tileSize, part.y * tileSize);\r\n        }\r\n    }\r\n}"
+        }
+    ]
+}

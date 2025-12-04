@@ -1,0 +1,26 @@
+{
+    "sourceFile": "src/main/java/com/client/entities/ExplosionRender.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1764831780515,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764831883103,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,5 @@\n-package com.client.entities;\r\n+package com.myclient.entities;\r\n \r\n public class ExplosionRender {\r\n     \r\n }\r\n"
+                },
+                {
+                    "date": 1764831893088,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,46 @@\n package com.myclient.entities;\r\n \r\n-public class ExplosionRender {\r\n+import javafx.scene.canvas.GraphicsContext;\r\n+import javafx.scene.image.Image;\r\n+\r\n+public class VisualBomb {\r\n+    public final int tileX;\r\n+    public final int tileY;\r\n     \r\n-}\r\n+    // Animasi\r\n+    private final Image[] sprites;\r\n+    private final float frameInterval = 0.2f;\r\n+    private float animTimer = 0;\r\n+    private int frameIndex = 0;\r\n+\r\n+    private final int tileSize = 32;\r\n+    private final int bombSize = 28;\r\n+\r\n+    public VisualBomb(int tileX, int tileY) {\r\n+        this.tileX = tileX;\r\n+        this.tileY = tileY;\r\n+\r\n+        // Load Gambar langsung (Atau inject SpriteLoader lebih baik)\r\n+        sprites = new Image[3];\r\n+        sprites[0] = new Image(getClass().getResourceAsStream(\"/com/client/assets/bomb/bom1.png\"), bombSize, bombSize, false, false);\r\n+        sprites[1] = new Image(getClass().getResourceAsStream(\"/com/client/assets/bomb/bom2.png\"), bombSize, bombSize, false, false);\r\n+        sprites[2] = new Image(getClass().getResourceAsStream(\"/com/client/assets/bomb/bom3.png\"), bombSize, bombSize, false, false);\r\n+    }\r\n+\r\n+    public void update(double dt) {\r\n+        // Hanya update animasi denyut\r\n+        animTimer += dt;\r\n+        if (animTimer >= frameInterval) {\r\n+            animTimer = 0;\r\n+            frameIndex = (frameIndex + 1) % sprites.length;\r\n+        }\r\n+    }\r\n+\r\n+    public void render(GraphicsContext g) {\r\n+        double px = tileX * tileSize;\r\n+        double py = tileY * tileSize;\r\n+        double offset = (tileSize - bombSize) / 2.0;\r\n+\r\n+        g.drawImage(sprites[frameIndex], px + offset, py + offset, bombSize, bombSize);\r\n+    }\r\n+}\n\\ No newline at end of file\n"
+                }
+            ],
+            "date": 1764831780515,
+            "name": "Commit-0",
+            "content": "package com.client.entities;\r\n\r\npublic class ExplosionRender {\r\n    \r\n}\r\n"
+        }
+    ]
+}

@@ -1,0 +1,34 @@
+{
+    "sourceFile": "src/main/java/module-info.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 4,
+            "patches": [
+                {
+                    "date": 1764830318447,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764831822909,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,7 @@\n module client {\r\n     requires javafx.controls;\r\n     requires javafx.fxml;\r\n \r\n-    opens com.client to javafx.fxml;\r\n-    exports com.client;\r\n+    opens com.myclient to javafx.fxml;\r\n+    exports com.myclient;\r\n }\r\n"
+                },
+                {
+                    "date": 1764833294555,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,25 @@\n-module client {\r\n+module com.client {\r\n     requires javafx.controls;\r\n+    requires javafx.graphics;\r\n     requires javafx.fxml;\r\n+    requires com.google.gson;\r\n+    requires javafx.media;\r\n \r\n-    opens com.myclient to javafx.fxml;\r\n-    exports com.myclient;\r\n+    // Mengizinkan semua subpackages com.client.* diakses publik\r\n+    exports com.client;\r\n+    exports com.client.core;\r\n+    exports com.client.entities;\r\n+    exports com.client.render;\r\n+    exports com.client.ui;\r\n+    exports com.client.managers;\r\n+    exports com.client.network;\r\n+\r\n+    // Mengizinkan JavaFX (FXML) & Gson menggunakan reflection\r\n+    opens com.client to javafx.fxml, com.google.gson, javafx.media;\r\n+    opens com.client.core to javafx.fxml, com.google.gson, javafx.media;\r\n+    opens com.client.entities to javafx.fxml, com.google.gson, javafx.media;\r\n+    opens com.client.render to javafx.fxml, com.google.gson, javafx.media;\r\n+    opens com.client.ui to javafx.fxml, com.google.gson, javafx.media;\r\n+    opens com.client.managers to javafx.fxml, com.google.gson, javafx.media;\r\n+    opens com.client.network to javafx.fxml, com.google.gson, javafx.media;\r\n }\r\n"
+                },
+                {
+                    "date": 1764833299763,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,25 @@\n-module client {\r\n+module com.client {\r\n     requires javafx.controls;\r\n+    requires javafx.graphics;\r\n     requires javafx.fxml;\r\n+    requires com.google.gson;\r\n+    requires javafx.media;\r\n \r\n-    opens com.myclient to javafx.fxml;\r\n-    exports com.myclient;\r\n+    // Mengizinkan semua subpackages com.client.* diakses publik\r\n+    exports com.client;\r\n+    exports com.client.core;\r\n+    exports com.client.entities;\r\n+    exports com.client.render;\r\n+    exports com.client.ui;\r\n+    exports com.client.managers;\r\n+    exports com.client.network;\r\n+\r\n+    // Mengizinkan JavaFX (FXML) & Gson menggunakan reflection\r\n+    opens com.client to javafx.fxml, com.google.gson, javafx.media;\r\n+    opens com.client.core to javafx.fxml, com.google.gson, javafx.media;\r\n+    opens com.client.entities to javafx.fxml, com.google.gson, javafx.media;\r\n+    opens com.client.render to javafx.fxml, com.google.gson, javafx.media;\r\n+    opens com.client.ui to javafx.fxml, com.google.gson, javafx.media;\r\n+    opens com.client.managers to javafx.fxml, com.google.gson, javafx.media;\r\n+    opens com.client.network to javafx.fxml, com.google.gson, javafx.media;\r\n }\r\n"
+                },
+                {
+                    "date": 1764833305547,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,5 @@\n-module com. {\r\n+module com.client {\r\n     requires javafx.controls;\r\n     requires javafx.graphics;\r\n     requires javafx.fxml;\r\n     requires com.google.gson;\r\n"
+                }
+            ],
+            "date": 1764830318447,
+            "name": "Commit-0",
+            "content": "module client {\r\n    requires javafx.controls;\r\n    requires javafx.fxml;\r\n\r\n    opens com.client to javafx.fxml;\r\n    exports com.client;\r\n}\r\n"
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "target/maven-archiver/pom.properties",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1764835395294,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1764835395294,
+            "name": "Commit-0",
+            "content": "artifactId=mybomber\r\ngroupId=com.client\r\nversion=1.0-SNAPSHOT\r\n"
+        }
+    ]
+}

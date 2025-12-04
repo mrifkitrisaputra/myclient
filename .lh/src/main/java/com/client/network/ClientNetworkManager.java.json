@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/main/java/com/client/network/ClientNetworkManager.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1764833204401,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764833213579,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,14 +1,13 @@\n package com.myclient.network;\r\n \r\n+import com.client.ClientGameState;\r\n import java.io.BufferedReader;\r\n import java.io.IOException;\r\n import java.io.InputStreamReader;\r\n import java.io.PrintWriter;\r\n import java.net.Socket;\r\n \r\n-import com.client.ClientGameState;\r\n-\r\n public class ClientNetworkManager {\r\n \r\n     private Socket socket;\r\n     private PrintWriter out;\r\n"
+                }
+            ],
+            "date": 1764833204401,
+            "name": "Commit-0",
+            "content": "package com.myclient.network;\r\n\r\nimport com.client.ClientGameState;\r\nimport java.io.BufferedReader;\r\nimport java.io.IOException;\r\nimport java.io.InputStreamReader;\r\nimport java.io.PrintWriter;\r\nimport java.net.Socket;\r\n\r\npublic class ClientNetworkManager {\r\n\r\n    private Socket socket;\r\n    private PrintWriter out;\r\n    private BufferedReader in;\r\n    private boolean isRunning = false;\r\n\r\n    private final String serverIp;\r\n    private final int serverPort;\r\n    private final ClientGameState gameState;\r\n    private final PacketParser parser;\r\n\r\n    // Callback untuk notifikasi UI jika koneksi putus tiba-tiba\r\n    private Runnable onDisconnect;\r\n\r\n    public ClientNetworkManager(String ip, int port, ClientGameState gameState) {\r\n        this.serverIp = ip;\r\n        this.serverPort = port;\r\n        this.gameState = gameState;\r\n        this.parser = new PacketParser(gameState);\r\n    }\r\n\r\n    /**\r\n     * Mencoba connect ke server. Blocking method (akan diam sampai connect/gagal).\r\n     * @return true jika berhasil, throw Exception jika gagal.\r\n     */\r\n    public void connect() throws IOException {\r\n        System.out.println(\"Connecting to \" + serverIp + \":\" + serverPort + \"...\");\r\n        \r\n        // 1. Buka Socket TCP\r\n        socket = new Socket(serverIp, serverPort);\r\n        \r\n        // 2. Setup Input/Output Streams\r\n        out = new PrintWriter(socket.getOutputStream(), true);\r\n        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));\r\n        \r\n        isRunning = true;\r\n        System.out.println(\"Connected to Server!\");\r\n\r\n        // 3. Mulai Thread untuk mendengarkan pesan dari Server terus menerus\r\n        startListenThread();\r\n    }\r\n\r\n    private void startListenThread() {\r\n        new Thread(() -> {\r\n            try {\r\n                String message;\r\n                // Loop: Baca pesan baris per baris dari Server\r\n                while (isRunning && (message = in.readLine()) != null) {\r\n                    // System.out.println(\"RECV: \" + message); // Debug\r\n                    parser.parse(message);\r\n                }\r\n            } catch (IOException e) {\r\n                System.err.println(\"Connection lost: \" + e.getMessage());\r\n            } finally {\r\n                close();\r\n            }\r\n        }).start();\r\n    }\r\n\r\n    // Mengirim pesan String ke Server\r\n    public void send(String message) {\r\n        if (socket != null && !socket.isClosed()) {\r\n            out.println(message);\r\n        }\r\n    }\r\n\r\n    public void close() {\r\n        isRunning = false;\r\n        try {\r\n            if (socket != null) socket.close();\r\n            if (in != null) in.close();\r\n            if (out != null) out.close();\r\n        } catch (IOException e) {\r\n            e.printStackTrace();\r\n        }\r\n        \r\n        if (onDisconnect != null) {\r\n            onDisconnect.run();\r\n        }\r\n    }\r\n\r\n    public void setOnDisconnect(Runnable onDisconnect) {\r\n        this.onDisconnect = onDisconnect;\r\n    }\r\n}"
+        }
+    ]
+}

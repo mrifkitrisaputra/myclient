@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/main/java/client/ui/PauseMenu.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1764830378830,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1764830378830,
+            "name": "Commit-0",
+            "content": "// src/main/java/com/client/ui/PauseMenu.java\r\npackage com.client.ui;\r\n\r\nimport com.client.managers.RoomManager;\r\n\r\nimport javafx.geometry.Pos;\r\nimport javafx.scene.control.Button;\r\nimport javafx.scene.control.Label;\r\nimport javafx.scene.layout.VBox;\r\nimport javafx.scene.paint.Color;\r\nimport javafx.scene.text.Font;\r\n\r\npublic class PauseMenu extends VBox {\r\n\r\n    public PauseMenu(Runnable onResume, Runnable onLeave) {\r\n        this.setAlignment(Pos.CENTER);\r\n        this.setSpacing(20);\r\n        this.setStyle(\"-fx-background-color: rgba(0, 0, 0, 0.85); -fx-padding: 30; -fx-background-radius: 15;\");\r\n        this.setMaxSize(300, 300);\r\n\r\n        Label title = new Label(\"PAUSED\");\r\n        title.setTextFill(Color.WHITE);\r\n        title.setFont(Font.font(\"Arial\", 32));\r\n\r\n        Button btnResume = new Button(\"Resume Game\");\r\n        Button btnLeave = new Button(\"Leave Room\");\r\n\r\n        styleButton(btnResume, \"#27ae60\");\r\n        styleButton(btnLeave, \"#c0392b\");\r\n\r\n        btnResume.setOnAction(e -> onResume.run());\r\n        \r\n        btnLeave.setOnAction(e -> {\r\n            RoomManager.playerLeft(\"Player 1 (You)\"); // Logic host migration\r\n            onLeave.run();\r\n        });\r\n\r\n        this.getChildren().addAll(title, btnResume, btnLeave);\r\n    }\r\n\r\n    private void styleButton(Button btn, String color) {\r\n        btn.setStyle(\"-fx-background-color: \" + color + \"; -fx-text-fill: white; -fx-font-size: 16px;\");\r\n        btn.setPrefWidth(200);\r\n    }\r\n}"
+        }
+    ]
+}

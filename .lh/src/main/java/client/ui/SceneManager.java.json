@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/main/java/client/ui/SceneManager.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1764830378833,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1764830378833,
+            "name": "Commit-0",
+            "content": "package com.client.ui;\r\n\r\nimport javafx.scene.Scene;\r\nimport javafx.stage.Stage;\r\n\r\npublic class SceneManager {\r\n    private static Stage stage;\r\n    \r\n    public static void setStage(Stage s) {\r\n        stage = s;\r\n    }\r\n\r\n    public static void toLobby() {\r\n        LobbyScene lobby = new LobbyScene();\r\n        stage.setScene(lobby.getScene());\r\n        stage.setTitle(\"Bomber Game - Lobby\");\r\n    }\r\n\r\n    public static void toRoom(String roomName, boolean isHost) {\r\n        RoomScene room = new RoomScene(roomName, isHost);\r\n        stage.setScene(room.getScene());\r\n        stage.setTitle(\"Room: \" + roomName);\r\n    }\r\n\r\n    public static void toGame() {\r\n        // Disini kita akan inisialisasi GameCanvas (Gameplay dimulai)\r\n        // Kita butuh dummy player/input handler di sini nantinya untuk integrasi penuh\r\n        // Untuk sekarang, logic ini ada di App.java, nanti kita pindahkan.\r\n    }\r\n    \r\n    // Method helper untuk mengganti scene secara custom (misal dari App.java)\r\n    public static void setScene(Scene scene) {\r\n        stage.setScene(scene);\r\n    }\r\n}"
+        }
+    ]
+}

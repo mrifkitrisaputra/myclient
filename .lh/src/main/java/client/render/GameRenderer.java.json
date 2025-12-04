@@ -1,0 +1,30 @@
+{
+    "sourceFile": "src/main/java/client/render/GameRenderer.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 3,
+            "patches": [
+                {
+                    "date": 1764829125510,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764829146593,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,8 +1,8 @@\n package com.myclient.render;\r\n \r\n import com.myclient.state.ClientState;\r\n-import com.myclient.state.data.*;\r\n+import client.state.data.*;\r\n import javafx.scene.canvas.Canvas;\r\n import javafx.scene.canvas.GraphicsContext;\r\n import javafx.scene.paint.Color;\r\n import javafx.scene.text.Font;\r\n"
+                },
+                {
+                    "date": 1764829198030,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,5 @@\n-package com.myclient.render;\r\n+package client.render;\r\n \r\n import client.state.ClientState;\r\n import client.state.data.*;\r\n import javafx.scene.canvas.Canvas;\r\n"
+                },
+                {
+                    "date": 1764829213647,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,8 +1,8 @@\n package client.render;\r\n \r\n import client.state.ClientState;\r\n-import client.state.data.*;\r\n+import client.state.*;\r\n import javafx.scene.canvas.Canvas;\r\n import javafx.scene.canvas.GraphicsContext;\r\n import javafx.scene.paint.Color;\r\n import javafx.scene.text.Font;\r\n"
+                }
+            ],
+            "date": 1764829125510,
+            "name": "Commit-0",
+            "content": "package com.myclient.render;\r\n\r\nimport com.myclient.state.ClientState;\r\nimport com.myclient.state.data.*;\r\nimport javafx.scene.canvas.Canvas;\r\nimport javafx.scene.canvas.GraphicsContext;\r\nimport javafx.scene.paint.Color;\r\nimport javafx.scene.text.Font;\r\n\r\npublic class GameRenderer {\r\n\r\n    private final Canvas canvas;\r\n    private final GraphicsContext g;\r\n\r\n    // Renderer terpisah\r\n    private final TilesetRenderer tileRenderer;\r\n    private final PlayerRenderer playerRenderer;\r\n    private final ItemRenderer itemRenderer;\r\n    private final BombRenderer bombRenderer;\r\n    private final ExplosionRenderer explosionRenderer;\r\n\r\n    // Camera values\r\n    private double cameraX = 0;\r\n    private double cameraY = 0;\r\n    private double cameraScale = 2.0;\r\n\r\n    public GameRenderer(\r\n            Canvas canvas,\r\n            SpriteLoader loader,\r\n            int tileSize\r\n    ) {\r\n        this.canvas = canvas;\r\n        this.g = canvas.getGraphicsContext2D();\r\n\r\n        this.tileRenderer = new TilesetRenderer(loader, tileSize);\r\n        this.playerRenderer = new PlayerRenderer(loader, tileSize);\r\n        this.itemRenderer = new ItemRenderer(loader, tileSize);\r\n        this.bombRenderer = new BombRenderer(loader, tileSize);\r\n        this.explosionRenderer = new ExplosionRenderer(loader, tileSize);\r\n    }\r\n\r\n    // -------------------------------------------------------------\r\n    // Public Render Method\r\n    // -------------------------------------------------------------\r\n    public void render(ClientState state) {\r\n        clearScreen();\r\n\r\n        g.save();\r\n\r\n        applyCamera();\r\n\r\n        // ---- urutan render ----\r\n        tileRenderer.render(g, state.map);\r\n\r\n        itemRenderer.render(g, state.items);\r\n\r\n        bombRenderer.render(g, state.bombs);\r\n\r\n        explosionRenderer.render(g, state.explosions);\r\n\r\n        playerRenderer.render(g, state.player);\r\n\r\n        g.restore();\r\n\r\n        renderUI(state);\r\n    }\r\n\r\n    // -------------------------------------------------------------\r\n    // Background\r\n    // -------------------------------------------------------------\r\n    private void clearScreen() {\r\n        g.setFill(Color.web(\"#1E1E1E\"));\r\n        g.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());\r\n    }\r\n\r\n    // -------------------------------------------------------------\r\n    // Apply Camera Transform\r\n    // -------------------------------------------------------------\r\n    private void applyCamera() {\r\n        g.translate(canvas.getWidth() / 2, canvas.getHeight() / 2);\r\n        g.scale(cameraScale, cameraScale);\r\n        g.translate(-cameraX, -cameraY);\r\n    }\r\n\r\n    public void followPlayer(PlayerData p) {\r\n        this.cameraX = p.x;\r\n        this.cameraY = p.y;\r\n    }\r\n\r\n    // -------------------------------------------------------------\r\n    // UI Rendering\r\n    // -------------------------------------------------------------\r\n    private void renderUI(ClientState state) {\r\n        g.save();\r\n        g.setFont(new Font(\"Consolas\", 42));\r\n        g.setFill(Color.WHITE);\r\n        g.fillText(state.timerString, 20, 50);\r\n\r\n        g.restore();\r\n    }\r\n}\r\n"
+        }
+    ]
+}

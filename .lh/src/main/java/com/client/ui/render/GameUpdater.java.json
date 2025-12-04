@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/main/java/com/client/ui/render/GameUpdater.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1764831883099,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1764831883099,
+            "name": "Commit-0",
+            "content": "package com.client.ui.render;\r\n\r\nimport com.client.App; \r\nimport com.client.core.Arena;\r\nimport com.client.core.GameTimer;\r\nimport com.client.managers.BombManager;\r\nimport com.client.managers.ExplosionManager;\r\nimport com.client.managers.ItemManager;\r\nimport com.client.managers.PlayerController;\r\n\r\npublic class GameUpdater {\r\n\r\n    private final PlayerController playerController;\r\n    private final BombManager bombManager;\r\n    private final ExplosionManager explosionManager;\r\n    private final ItemManager itemManager;\r\n    \r\n    private final CameraScaler scaler;\r\n    private final GameTimer timer;\r\n    private final Arena arena;\r\n    \r\n    private boolean isGameOver = false;\r\n    private boolean isPaused = false;\r\n\r\n    public GameUpdater(PlayerController player, BombManager bombs,\r\n                       ExplosionManager explosions, \r\n                       ItemManager itemManager,\r\n                       CameraScaler scaler,\r\n                       GameTimer timer, Arena arena) {\r\n\r\n        this.playerController = player;\r\n        this.bombManager = bombs;\r\n        this.explosionManager = explosions;\r\n        this.itemManager = itemManager;\r\n        this.scaler = scaler;\r\n        this.timer = timer;\r\n        this.arena = arena;\r\n    }\r\n\r\n    public void update(double dt) {\r\n        // Jika Game Over atau Paused, hentikan update logic game\r\n        if (isGameOver || isPaused) return;\r\n\r\n        // 1. CEK PAUSE (ESC)\r\n        if (playerController.getInput().isESC()) { \r\n             // Konsumsi key agar tidak spamming (opsional, tapi bagus)\r\n             // playerController.getInput().consumeEsc(); \r\n             \r\n             isPaused = true; \r\n             App.showPauseMenu(); \r\n             return;\r\n        }\r\n\r\n        // 2. UPDATE CORE LOGIC\r\n        playerController.update(dt);\r\n        bombManager.update(dt, explosionManager);\r\n        explosionManager.update(dt);\r\n        itemManager.update(playerController.getPlayer());\r\n        timer.update(dt);\r\n        scaler.update();\r\n        \r\n        double currentTime = timer.getTime();\r\n        arena.update(dt, currentTime, playerController.getPlayer());\r\n\r\n        // 3. CEK KONDISI KALAH (Mati & Animasi Selesai)\r\n        if (playerController.isDeathAnimationFinished()) {\r\n            triggerGameOver(false); \r\n        }\r\n\r\n        // 4. CEK KONDISI MENANG (Waktu Habis)\r\n        if (timer.getTime() <= 0) {\r\n            triggerGameOver(true); \r\n        }\r\n    }\r\n\r\n    private void triggerGameOver(boolean isWin) {\r\n        if (!isGameOver) {\r\n            isGameOver = true;\r\n            App.showGameOver(isWin); \r\n        }\r\n    }\r\n    \r\n    // Method PENTING untuk Resume Game\r\n    public void resumeGame() {\r\n        this.isPaused = false;\r\n    }\r\n}"
+        }
+    ]
+}

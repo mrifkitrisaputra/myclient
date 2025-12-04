@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/main/java/client/state/BombState.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1764828479724,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764830378878,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,5 @@\n-package client.state;\r\n+package com.client.state;\r\n \r\n public class BombState {\r\n     public int tileX;\r\n     public int tileY;\r\n"
+                }
+            ],
+            "date": 1764828479724,
+            "name": "Commit-0",
+            "content": "package client.state;\r\n\r\npublic class BombState {\r\n    public int tileX;\r\n    public int tileY;\r\n    public int range;\r\n\r\n    public double timer;        // waktu tersisa (server yg update)\r\n    public boolean exploded;\r\n\r\n    public BombState(int tileX, int tileY, int range, double timer, boolean exploded) {\r\n        this.tileX = tileX;\r\n        this.tileY = tileY;\r\n        this.range = range;\r\n        this.timer = timer;\r\n        this.exploded = exploded;\r\n    }\r\n}\r\n"
+        }
+    ]
+}

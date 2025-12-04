@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/main/java/client/state/PlayerState.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1764828499483,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764830378880,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,5 @@\n-package client.state;\r\n+package com.client.state;\r\n \r\n public class PlayerState {\r\n \r\n     public int id;         // ID unik player dari server\r\n"
+                }
+            ],
+            "date": 1764828499483,
+            "name": "Commit-0",
+            "content": "package client.state;\r\n\r\npublic class PlayerState {\r\n\r\n    public int id;         // ID unik player dari server\r\n\r\n    public double x;       // posisi pixel\r\n    public double y;       \r\n    public double speed;\r\n\r\n    public int bombs;      // bomb yang tersedia\r\n    public int bombRange;  // radius bom\r\n\r\n    public boolean dead;   // kondisi mati\r\n    public boolean playing; // true kalau masih di game\r\n\r\n    public enum Dir { UP, DOWN, LEFT, RIGHT }\r\n    public enum State { IDLE, WALK, PLACE, DEAD }\r\n\r\n    public Dir dir = Dir.DOWN;\r\n    public State state = State.IDLE;\r\n\r\n    public PlayerState(int id) {\r\n        this.id = id;\r\n    }\r\n}\r\n"
+        }
+    ]
+}

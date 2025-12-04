@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/main/java/com/client/core/InputHandler.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1764832842593,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764832848686,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,5 @@\n-package com.myclient.core;\r\n+package com.client.core;\r\n \r\n import java.util.HashSet;\r\n import java.util.Set;\r\n \r\n"
+                }
+            ],
+            "date": 1764832842593,
+            "name": "Commit-0",
+            "content": "package com.client.core;\r\n\r\npublic class InputHandler {\r\n    \r\n}\r\n"
+        }
+    ]
+}

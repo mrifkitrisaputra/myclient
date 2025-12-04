@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/main/java/client/render/ExplosionRender.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1764829534970,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764830378885,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,5 @@\n-package client.render;\r\n+package com.client.render;\r\n \r\n public class ExplosionRender {\r\n     \r\n }\r\n"
+                }
+            ],
+            "date": 1764829534970,
+            "name": "Commit-0",
+            "content": "package client.render;\r\n\r\npublic class ExplosionRender {\r\n    \r\n}\r\n"
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/main/java/com/client/ui/LoginScene.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1764834175809,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1764834175809,
+            "name": "Commit-0",
+            "content": "package com.client.ui;\r\n\r\nimport javafx.geometry.Pos;\r\nimport javafx.scene.Scene;\r\nimport javafx.scene.control.Button;\r\nimport javafx.scene.control.Label;\r\nimport javafx.scene.control.TextField;\r\nimport javafx.scene.layout.VBox;\r\nimport javafx.scene.text.Font;\r\nimport javafx.scene.text.FontWeight;\r\n\r\nimport java.util.function.Consumer;\r\n\r\npublic class LoginScene {\r\n    private final Scene scene;\r\n\r\n    public LoginScene(Consumer<String> onConnect) {\r\n        VBox root = new VBox(20);\r\n        root.setAlignment(Pos.CENTER);\r\n        root.setStyle(\"-fx-background-color: #2c3e50;\");\r\n\r\n        Label title = new Label(\"CONNECT TO SERVER\");\r\n        title.setTextFill(javafx.scene.paint.Color.WHITE);\r\n        title.setFont(Font.font(\"Segoe UI\", FontWeight.BOLD, 24));\r\n\r\n        TextField ipField = new TextField(\"127.0.0.1\");\r\n        ipField.setMaxWidth(300);\r\n        ipField.setPromptText(\"Server IP Address\");\r\n        ipField.setStyle(\"-fx-font-size: 16px;\");\r\n\r\n        Button btnConnect = new Button(\"CONNECT\");\r\n        btnConnect.setStyle(\"-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;\");\r\n        btnConnect.setPrefWidth(200);\r\n\r\n        btnConnect.setOnAction(e -> {\r\n            String ip = ipField.getText();\r\n            if (!ip.isEmpty()) {\r\n                btnConnect.setDisable(true); // Prevent double click\r\n                btnConnect.setText(\"Connecting...\");\r\n                onConnect.accept(ip); // Panggil fungsi di App.java\r\n            }\r\n        });\r\n\r\n        root.getChildren().addAll(title, ipField, btnConnect);\r\n        this.scene = new Scene(root, 640, 480);\r\n    }\r\n\r\n    public Scene getScene() {\r\n        return scene;\r\n    }\r\n}"
+        }
+    ]
+}

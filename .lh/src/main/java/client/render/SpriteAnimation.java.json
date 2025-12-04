@@ -1,0 +1,26 @@
+{
+    "sourceFile": "src/main/java/client/render/SpriteAnimation.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1764829046101,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764829051797,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,5 @@\n-package myclient.render;\r\n+package client.render;\r\n \r\n import javafx.scene.image.Image;\r\n import javafx.scene.image.WritableImage;\r\n \r\n"
+                },
+                {
+                    "date": 1764830378883,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,5 @@\n-package client.render;\r\n+package com.client.render;\r\n \r\n import javafx.scene.image.Image;\r\n import javafx.scene.image.WritableImage;\r\n \r\n"
+                }
+            ],
+            "date": 1764829046101,
+            "name": "Commit-0",
+            "content": "package com.myclient.render;\r\n\r\nimport javafx.scene.image.Image;\r\nimport javafx.scene.image.WritableImage;\r\n\r\npublic class SpriteAnimation {\r\n\r\n    private final Image[] frames;\r\n    private int index = 0;\r\n    private double timer = 0;\r\n\r\n    private double frameTime = 0.12;   // Durasi setiap frame\r\n    private boolean loop = true;\r\n    private boolean finished = false;\r\n\r\n    public SpriteAnimation(Image... frames) {\r\n\r\n        if (frames == null || frames.length == 0) {\r\n            // Prevent crash → placeholder 1px\r\n            this.frames = new Image[]{ new WritableImage(1, 1) };\r\n        } else {\r\n            this.frames = frames;\r\n        }\r\n    }\r\n\r\n    /**\r\n     * Update animation and return the current frame.\r\n     *\r\n     * @param dt delta time (seconds)\r\n     * @return current frame image\r\n     */\r\n    public Image update(double dt) {\r\n        if (!loop && finished) {\r\n            return frames[frames.length - 1];\r\n        }\r\n\r\n        timer += dt;\r\n\r\n        // Move to next frame if timer reached threshold\r\n        while (timer >= frameTime) {\r\n            timer -= frameTime;\r\n\r\n            if (loop) {\r\n                index = (index + 1) % frames.length;\r\n            } else {\r\n                if (index < frames.length - 1) {\r\n                    index++;\r\n                } else {\r\n                    finished = true;\r\n                }\r\n            }\r\n        }\r\n\r\n        return frames[index];\r\n    }\r\n\r\n    /** Reset animation back to first frame. */\r\n    public void reset() {\r\n        index = 0;\r\n        timer = 0;\r\n        finished = false;\r\n    }\r\n\r\n    // ----------- SETTERS / GETTERS -----------\r\n\r\n    public void setFrameTime(double time) {\r\n        this.frameTime = Math.max(0.01, time); // Prevent zero division\r\n    }\r\n\r\n    public void setLoop(boolean loop) {\r\n        this.loop = loop;\r\n    }\r\n\r\n    public boolean isFinished() {\r\n        return finished;\r\n    }\r\n\r\n    public int getFrameIndex() {\r\n        return index;\r\n    }\r\n\r\n    public Image getCurrentFrame() {\r\n        return frames[index];\r\n    }\r\n}\r\n"
+        }
+    ]
+}

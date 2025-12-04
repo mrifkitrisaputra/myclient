@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/main/java/com/client/render/CameraScaler.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1764831883082,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764832249005,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,6 @@\n-package com.client.render;\r\n+package com.myclient.render;\r\n+\r\n import javafx.scene.canvas.Canvas;\r\n import javafx.scene.canvas.GraphicsContext;\r\n \r\n public class CameraScaler {\r\n@@ -14,10 +15,8 @@\n     public CameraScaler(Canvas canvas) {\r\n         this.canvas = canvas;\r\n     }\r\n \r\n-    public void update() {}\r\n-\r\n     public void addScale(double s) {\r\n         scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale + s));\r\n     }\r\n \r\n@@ -25,5 +24,10 @@\n         g.scale(scale, scale);\r\n     }\r\n \r\n     public double getScale() { return scale; }\r\n-}\r\n+    \r\n+    // Setter jika perlu reset dari luar\r\n+    public void setScale(double s) {\r\n+        this.scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, s));\r\n+    }\r\n+}\n\\ No newline at end of file\n"
+                }
+            ],
+            "date": 1764831883082,
+            "name": "Commit-0",
+            "content": "package com.client.render;\r\nimport javafx.scene.canvas.Canvas;\r\nimport javafx.scene.canvas.GraphicsContext;\r\n\r\npublic class CameraScaler {\r\n\r\n    private double scale = 1.8;\r\n    private final double MIN_SCALE = 0.5;\r\n    private final double MAX_SCALE = 4.0;\r\n    private final double STEP = 0.1;\r\n\r\n    private final Canvas canvas;\r\n\r\n    public CameraScaler(Canvas canvas) {\r\n        this.canvas = canvas;\r\n    }\r\n\r\n    public void update() {}\r\n\r\n    public void addScale(double s) {\r\n        scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale + s));\r\n    }\r\n\r\n    public void applyTransform(GraphicsContext g) {\r\n        g.scale(scale, scale);\r\n    }\r\n\r\n    public double getScale() { return scale; }\r\n}\r\n"
+        }
+    ]
+}

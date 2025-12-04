@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/main/java/com/client/ui/render/SpriteAnimation.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1764831883100,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1764831883100,
+            "name": "Commit-0",
+            "content": "package com.client.ui.render;\r\n\r\nimport javafx.scene.image.Image;\r\n\r\npublic class SpriteAnimation {\r\n\r\n    private final Image[] frames;\r\n    private int index = 0;\r\n    private double timer = 0;\r\n    private double frameTime = 0.12;\r\n    private boolean loop = true;\r\n    private boolean isFinished = false;\r\n\r\n    public SpriteAnimation(Image... frames) {\r\n        if (frames == null || frames.length == 0) {\r\n            // placeholder 1px agar tidak crash\r\n            this.frames = new Image[]{ new javafx.scene.image.WritableImage(1, 1) };\r\n        } else {\r\n            this.frames = frames;\r\n        }\r\n    }\r\n\r\n    public Image update(double dt) {\r\n        // Jika sudah selesai dan tidak looping, jangan update lagi, return frame terakhir\r\n        if (!loop && isFinished) {\r\n            return frames[frames.length - 1];\r\n        }\r\n\r\n        timer += dt;\r\n\r\n        while (timer >= frameTime) {\r\n            timer -= frameTime;\r\n\r\n            if (loop) {\r\n                // Modulus hanya dipakai jika looping\r\n                index = (index + 1) % frames.length;\r\n            } else {\r\n                // Jika tidak looping\r\n                if (index < frames.length - 1) {\r\n                    index++;\r\n                } else {\r\n                    // Mentok di frame terakhir -> Tandai selesai\r\n                    isFinished = true;\r\n                }\r\n            }\r\n        }\r\n        return frames[index];\r\n    }\r\n\r\n    public void reset() {\r\n        index = 0;\r\n        timer = 0;\r\n        isFinished = false;\r\n    }\r\n\r\n    // Tambahkan getter untuk debugging\r\n    public int getIndex() {\r\n        return index;\r\n    }\r\n\r\n    public void setLoop(boolean loop) {\r\n        this.loop = loop;\r\n    }\r\n\r\n    // Getter untuk dicek di Player/Renderer\r\n    public boolean isFinished() {\r\n        return isFinished;\r\n    }\r\n}\r\n"
+        }
+    ]
+}

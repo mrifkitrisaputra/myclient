@@ -1,0 +1,18 @@
+{
+    "sourceFile": "pom.xml",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1764835395285,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1764835395285,
+            "name": "Commit-0",
+            "content": "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\r\n         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 \r\n                             http://maven.apache.org/xsd/maven-4.0.0.xsd\">\r\n\r\n    <modelVersion>4.0.0</modelVersion>\r\n\r\n    <groupId>com.client</groupId>\r\n    <artifactId>mybomber</artifactId>\r\n    <version>1.0-SNAPSHOT</version>\r\n\r\n    <properties>\r\n        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\r\n        <maven.compiler.release>17</maven.compiler.release>\r\n        <javafx.version>21.0.2</javafx.version>\r\n        <javafx.os>win</javafx.os>\r\n    </properties>\r\n\r\n    <dependencies>\r\n\r\n        <!-- JavaFX Controls -->\r\n        <dependency>\r\n            <groupId>org.openjfx</groupId>\r\n            <artifactId>javafx-controls</artifactId>\r\n            <version>${javafx.version}</version>\r\n        </dependency>\r\n\r\n        <!-- JavaFX Graphics -->\r\n        <dependency>\r\n            <groupId>org.openjfx</groupId>\r\n            <artifactId>javafx-graphics</artifactId>\r\n            <version>${javafx.version}</version>\r\n        </dependency>\r\n\r\n        <!-- JavaFX FXML (kalau perlu) -->\r\n        <dependency>\r\n            <groupId>org.openjfx</groupId>\r\n            <artifactId>javafx-fxml</artifactId>\r\n            <version>${javafx.version}</version>\r\n        </dependency>\r\n\r\n        <!-- Gson -->\r\n        <dependency>\r\n            <groupId>com.google.code.gson</groupId>\r\n            <artifactId>gson</artifactId>\r\n            <version>2.10.1</version>\r\n        </dependency>\r\n\r\n        <dependency>\r\n            <groupId>org.openjfx</groupId>\r\n            <artifactId>javafx-media</artifactId>\r\n            <version>21.0.2</version>\r\n            <classifier>${javafx.os}</classifier>\r\n        </dependency>\r\n\r\n    </dependencies>\r\n\r\n    <build>\r\n        <plugins>\r\n\r\n            <!-- JavaFX Run -->\r\n            <plugin>\r\n                <groupId>org.openjfx</groupId>\r\n                <artifactId>javafx-maven-plugin</artifactId>\r\n                <version>0.0.8</version>\r\n                <configuration>\r\n                    <mainClass>com.client/com.client.App</mainClass>\r\n                </configuration>\r\n            </plugin>\r\n\r\n            <!-- Compiler -->\r\n            <plugin>\r\n                <groupId>org.apache.maven.plugins</groupId>\r\n                <artifactId>maven-compiler-plugin</artifactId>\r\n                <version>3.11.0</version>\r\n                <configuration>\r\n                    <release>17</release>\r\n                </configuration>\r\n            </plugin>\r\n\r\n        </plugins>\r\n    </build>\r\n\r\n</project>\r\n"
+        }
+    ]
+}

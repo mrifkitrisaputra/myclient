@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/main/java/client/ui/render/SpritePreview.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1764830378856,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1764830378856,
+            "name": "Commit-0",
+            "content": "package com.client.ui.render;\r\n// package com.client.render;\r\n\r\n// import com.client.core.InputHandler;\r\n// import com.client.entities.Player;\r\n\r\n// import javafx.application.Application;\r\n// import javafx.scene.Scene;\r\n// import javafx.scene.image.Image;\r\n// import javafx.scene.layout.StackPane;\r\n// import javafx.stage.Stage;\r\n\r\n// public class SpritePreview extends Application {\r\n\r\n//     @Override\r\n//     public void start(Stage stage) {\r\n\r\n//         SpriteLoader loader = new SpriteLoader();\r\n\r\n//         // Load sheet 1\r\n//         loader.load(\"/com/client/assets/player/sprites.json\",\r\n//                     \"/com/client/assets/player/spritesheet.png\");\r\n\r\n//         // Load sheet 2\r\n//         loader.load(\"/com/client/assets/player/set2.json\",\r\n//                     \"/com/client/assets/player/spritesheet2.png\");\r\n\r\n//         Player player = new Player();\r\n\r\n//         // Load anim sets\r\n//         loadAnim(player, loader, \"idle_down\", 1);\r\n//         loadAnim(player, loader, \"idle_up\", 0x1);\r\n//         loadAnim(player, loader, \"idle_left\", 1);\r\n//         loadAnim(player, loader, \"idle_right\", 1);\r\n\r\n//         loadAnim(player, loader, \"walk_down\", 4);\r\n//         loadAnim(player, loader, \"walk_right\", 4);\r\n//         loadAnim(player, loader, \"walk_up\", 4);\r\n//         loadAnim(player, loader, \"walk_left\", 3);\r\n\r\n//         loadAnim(player, loader, \"place_bom\", 4);\r\n//         loadAnim(player, loader, \"death\", 4);\r\n\r\n//         InputHandler input = new InputHandler();\r\n\r\n//         GameCanvas canvas = new GameCanvas(player, input);\r\n//         Scene scene = new Scene(new StackPane(canvas));\r\n\r\n//         input.attach(scene);\r\n\r\n//         stage.setTitle(\"Bomberman Animation Test\");\r\n//         stage.setScene(scene);\r\n//         stage.show();\r\n//     }\r\n\r\n//     private void loadAnim(Player p, SpriteLoader loader, String base, int count) {\r\n//         Image[] arr = new Image[count];\r\n\r\n//         for (int i = 1; i <= count; i++) {\r\n//             arr[i - 1] = loader.get(base + i);\r\n//         }\r\n\r\n//         p.addAnim(base, new SpriteAnimation(arr));\r\n//     }\r\n\r\n//     public static void main(String[] args) {\r\n//         launch();\r\n//     }\r\n// }\r\n"
+        }
+    ]
+}

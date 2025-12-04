@@ -1,0 +1,201 @@
+.idle_down1 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -71px -33px;
+    -fx-pref-width: 144px;
+    -fx-pref-height: 193px;
+}
+
+.idle_down2 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -332px -35px;
+    -fx-pref-width: 141px;
+    -fx-pref-height: 191px;
+}
+
+.idle_down3 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -593px -35px;
+    -fx-pref-width: 141px;
+    -fx-pref-height: 191px;
+}
+
+.idle_down4 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -850px -33px;
+    -fx-pref-width: 148px;
+    -fx-pref-height: 192px;
+}
+
+/* ========== IDLE UP ========== */
+
+.idle_up1 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -71px -273px;
+    -fx-pref-width: 144px;
+    -fx-pref-height: 187px;
+}
+
+.idle_up2 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-background-position: -326px -263px;
+    -fx-pref-width: 150px;
+    -fx-pref-height: 197px;
+}
+
+.idle_up3 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -590px -263px;
+    -fx-pref-width: 144px;
+    -fx-pref-height: 197px;
+}
+
+.idle_up4 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -850px -261px;
+    -fx-pref-width: 150px;
+    -fx-pref-height: 199px;
+}
+
+/* ========== IDLE LEFT ========== */
+
+.idle_left1 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -80px -508px;
+    -fx-pref-width: 116px;
+    -fx-pref-height: 187px;
+}
+
+.idle_left2 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -344px -507px;
+    -fx-pref-width: 113px;
+    -fx-pref-height: 188px;
+}
+
+.idle_left3 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -608px -508px;
+    -fx-pref-width: 117px;
+    -fx-pref-height: 186px;
+}
+
+.idle_left4 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -869px -508px;
+    -fx-pref-width: 113px;
+    -fx-pref-height: 187px;
+}
+
+/* ========== IDLE RIGHT ========== */
+
+.idle_right1 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -68px -736px;
+    -fx-pref-width: 144px;
+    -fx-pref-height: 187px;
+}
+
+.idle_right2 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -332px -736px;
+    -fx-pref-width: 138px;
+    -fx-pref-height: 187px;
+}
+
+.idle_right3 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -609px -736px;
+    -fx-pref-width: 112px;
+    -fx-pref-height: 187px;
+}
+
+.idle_right4 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -850px -736px;
+    -fx-pref-width: 142px;
+    -fx-pref-height: 187px;
+}
+
+/* ========== WALK DOWN ========== */
+
+.walk_down1 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -68px -973px;
+    -fx-pref-width: 138px;
+    -fx-pref-height: 203px;
+}
+
+.walk_down2 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -332px -973px;
+    -fx-pref-width: 141px;
+    -fx-pref-height: 203px;
+}
+
+.walk_down3 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -593px -973px;
+    -fx-pref-width: 141px;
+    -fx-pref-height: 203px;
+}
+
+.walk_down4 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -850px -973px;
+    -fx-pref-width: 142px;
+    -fx-pref-height: 203px;
+}
+
+/* ========== WALK RIGHT ========== */
+
+.walk_right1 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -74px -1216px;
+    -fx-pref-width: 132px;
+    -fx-pref-height: 194px;
+}
+
+.walk_right2 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -332px -1216px;
+    -fx-pref-width: 122px;
+    -fx-pref-height: 194px;
+}
+
+.walk_right3 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -596px -1216px;
+    -fx-pref-width: 132px;
+    -fx-pref-height: 195px;
+}
+
+.walk_right4 {
+    -fx-background-image: url("spritesheet.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: -866px -1216px;
+    -fx-pref-width: 122px;
+    -fx-pref-height: 194px;
+}

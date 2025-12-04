@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/main/java/client/App.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1764830378827,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1764830378827,
+            "name": "Commit-0",
+            "content": "package com.client;\r\n\r\nimport javafx.application.Application;\r\nimport javafx.fxml.FXMLLoader;\r\nimport javafx.scene.Parent;\r\nimport javafx.scene.Scene;\r\nimport javafx.stage.Stage;\r\n\r\nimport java.io.IOException;\r\n\r\n/**\r\n * JavaFX App\r\n */\r\npublic class App extends Application {\r\n\r\n    private static Scene scene;\r\n\r\n    @Override\r\n    public void start(Stage stage) throws IOException {\r\n        scene = new Scene(loadFXML(\"primary\"), 640, 480);\r\n        stage.setScene(scene);\r\n        stage.show();\r\n    }\r\n\r\n    static void setRoot(String fxml) throws IOException {\r\n        scene.setRoot(loadFXML(fxml));\r\n    }\r\n\r\n    private static Parent loadFXML(String fxml) throws IOException {\r\n        FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(fxml + \".fxml\"));\r\n        return fxmlLoader.load();\r\n    }\r\n\r\n    public static void main(String[] args) {\r\n        launch();\r\n    }\r\n\r\n}"
+        }
+    ]
+}

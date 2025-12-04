@@ -1,0 +1,26 @@
+{
+    "sourceFile": "src/main/java/com/client/core/SoundHandler.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1764832804661,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764832814004,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,5 @@\n-package com.myclient.core;\r\n+package com.client.core;\r\n \r\n import java.net.URL;\r\n import java.util.Random;\r\n import javafx.scene.media.AudioClip;\r\n"
+                },
+                {
+                    "date": 1764833672483,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -18,9 +18,9 @@\n         // Jika Anda merename folder resources jadi 'myclient', ubah string di bawah ini.\r\n         \r\n         // Load Bomb Drop Sounds (BMDROP1 - BMDROP3)\r\n         bombDrops = new AudioClip[3];\r\n-        loadSound(bombDrops, 0, \"/com/client/assets/bomb/BMDROP1.wav\");\r\n+        loadSound(bombDrops, 0, \"/com/clienr\\t/assets/bomb/BMDROP1.wav\");\r\n         loadSound(bombDrops, 1, \"/com/client/assets/bomb/BMDROP2.wav\");\r\n         loadSound(bombDrops, 2, \"/com/client/assets/bomb/BMDROP3.wav\");\r\n \r\n         // Load Explosion Sounds (EXPLO1, EXPLODE2 - EXPLODE4)\r\n"
+                }
+            ],
+            "date": 1764832804661,
+            "name": "Commit-0",
+            "content": "package com.client.core;\r\n\r\npublic class SoundHandler {\r\n    \r\n}\r\n"
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/main/java/com/client/network/InputSender.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1764833226093,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1764833226093,
+            "name": "Commit-0",
+            "content": "package com.client.network;\r\n\r\npublic class InputSender {\r\n\r\n    private final ClientNetworkManager network;\r\n\r\n    public InputSender(ClientNetworkManager network) {\r\n        this.network = network;\r\n    }\r\n\r\n    // Format Protocol: INPUT;KEY;IS_PRESSED\r\n    // Contoh: INPUT;UP;TRUE  (Tombol atas ditekan)\r\n    // Contoh: INPUT;UP;FALSE (Tombol atas dilepas)\r\n    \r\n    public void sendInput(String key, boolean isPressed) {\r\n        String status = isPressed ? \"TRUE\" : \"FALSE\";\r\n        network.send(\"INPUT;\" + key + \";\" + status);\r\n    }\r\n    \r\n    public void sendPlaceBomb() {\r\n        network.send(\"ACTION;PLACE_BOMB\");\r\n    }\r\n}"
+        }
+    ]
+}

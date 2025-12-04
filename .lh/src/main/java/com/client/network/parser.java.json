@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/main/java/com/client/network/parser.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1764833170387,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1764833170387,
+            "name": "Commit-0",
+            "content": "package com.client.network;\r\n\r\npublic class parser {\r\n    \r\n}\r\n"
+        }
+    ]
+}

@@ -1,0 +1,26 @@
+{
+    "sourceFile": "src/main/java/com/client/entities/TileRender.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1764831780515,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764831883106,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,5 @@\n-package com.client.entities;\r\n+package com.myclient.entities;\r\n \r\n public class TileRender {\r\n     \r\n }\r\n"
+                },
+                {
+                    "date": 1764831942466,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,53 @@\n package com.myclient.entities;\r\n \r\n-public class TileRender {\r\n+import javafx.scene.canvas.GraphicsContext;\r\n+import javafx.scene.image.Image;\r\n+\r\n+public class VisualItem {\r\n     \r\n-}\r\n+    public enum Type {\r\n+        BOMB_UP, FIRE_UP, SPEED_UP\r\n+    }\r\n+\r\n+    public int x; // Grid X\r\n+    public int y; // Grid Y\r\n+    public Type type;\r\n+\r\n+    private static Image imgBombUp;\r\n+    private static Image imgFireUp;\r\n+    private static Image imgSpeedUp;\r\n+    private final int tileSize = 32;\r\n+\r\n+    public VisualItem(int x, int y, Type type) {\r\n+        this.x = x;\r\n+        this.y = y;\r\n+        this.type = type;\r\n+        \r\n+        // Load static agar hemat memori (kalau belum di-load)\r\n+        if (imgBombUp == null) {\r\n+            loadImages();\r\n+        }\r\n+    }\r\n+\r\n+    private void loadImages() {\r\n+        try {\r\n+            imgBombUp = new Image(getClass().getResourceAsStream(\"/com/client/assets/item/BombUp.png\"), tileSize, tileSize, false, false);\r\n+            imgFireUp = new Image(getClass().getResourceAsStream(\"/com/client/assets/item/FireUp.png\"), tileSize, tileSize, false, false);\r\n+            imgSpeedUp = new Image(getClass().getResourceAsStream(\"/com/client/assets/item/SpeedUp.png\"), tileSize, tileSize, false, false);\r\n+        } catch (Exception e) {\r\n+            System.err.println(\"Gagal load gambar item: \" + e.getMessage());\r\n+        }\r\n+    }\r\n+\r\n+    public void render(GraphicsContext g) {\r\n+        Image img = switch (type) {\r\n+            case BOMB_UP -> imgBombUp;\r\n+            case FIRE_UP -> imgFireUp;\r\n+            case SPEED_UP -> imgSpeedUp;\r\n+        };\r\n+        \r\n+        if (img != null) {\r\n+            g.drawImage(img, x * tileSize, y * tileSize);\r\n+        }\r\n+    }\r\n+}\n\\ No newline at end of file\n"
+                }
+            ],
+            "date": 1764831780515,
+            "name": "Commit-0",
+            "content": "package com.client.entities;\r\n\r\npublic class TileRender {\r\n    \r\n}\r\n"
+        }
+    ]
+}

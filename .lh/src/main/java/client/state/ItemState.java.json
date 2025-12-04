@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/main/java/client/state/ItemState.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1764828472159,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764830378878,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,5 @@\n-package client.state;\r\n+package com.client.state;\r\n \r\n public class ItemState {\r\n     public int x;          // grid X\r\n     public int y;          // grid Y\r\n"
+                }
+            ],
+            "date": 1764828472159,
+            "name": "Commit-0",
+            "content": "package client.state;\r\n\r\npublic class ItemState {\r\n    public int x;          // grid X\r\n    public int y;          // grid Y\r\n    public ItemType type;  // jenis item\r\n\r\n    public ItemState(int x, int y, ItemType type) {\r\n        this.x = x;\r\n        this.y = y;\r\n        this.type = type;\r\n    }\r\n}\r\n"
+        }
+    ]
+}

@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/main/java/com/client/PrimaryController.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1764831883073,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764834361276,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -4,10 +4,5 @@\n \r\n import javafx.fxml.FXML;\r\n \r\n public class PrimaryController {\r\n-\r\n-    @FXML\r\n-    private void switchToSecondary() throws IOException {\r\n-        App.setRoot(\"secondary\");\r\n-    }\r\n }\r\n"
+                }
+            ],
+            "date": 1764831883073,
+            "name": "Commit-0",
+            "content": "package com.client;\r\n\r\nimport java.io.IOException;\r\nimport javafx.fxml.FXML;\r\n\r\npublic class PrimaryController {\r\n\r\n    @FXML\r\n    private void switchToSecondary() throws IOException {\r\n        App.setRoot(\"secondary\");\r\n    }\r\n}\r\n"
+        }
+    ]
+}
