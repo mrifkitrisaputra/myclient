@@ -93,7 +93,7 @@ public class RoomScene {
 
             // Logic Button Start: Hanya Host DAN Player >= 2
             boolean isHost = App.gameState.amIHost();
-            boolean enoughPlayers = ids.size() >= 2;
+            boolean enoughPlayers = ids.size() >= 1;
             
             if (isHost) {
                 btnStart.setDisable(!enoughPlayers);

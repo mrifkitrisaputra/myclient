@@ -5,6 +5,7 @@ import com.client.render.SpriteLoader;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
+import javafx.scene.image.WritableImage;
 
 public class VisualPlayer {
 
@@ -15,11 +16,11 @@ public class VisualPlayer {
     private double targetY;
 
     // Posisi Visual (Yang digambar di layar, mengejar target)
-    public double x;
-    public double y;
+    private double x;
+    private double y;
     
     // Kecepatan smoothing (Semakin besar = semakin responsif tapi bisa jitter dikit)
-    // 10.0 - 15.0 biasanya angka yang pas buat 2D top-down
+    // 12.0 angka yang pas buat top-down 60 FPS
     private final double SMOOTHING_SPEED = 12.0;
 
     // Status Visual
@@ -42,8 +43,9 @@ public class VisualPlayer {
 
     private final SpriteAnimation animDeath;
 
-    private final int offsetX = 0; 
-    private final int offsetY = -16; 
+    // Offset visual (agar kaki player pas di kotak collision)
+    private final int offsetX = 7; 
+    private final int offsetY = 3; 
 
     public VisualPlayer(int id, SpriteLoader loader) {
         this.id = id;
@@ -67,7 +69,7 @@ public class VisualPlayer {
 
     /**
      * Dipanggil saat menerima paket data baru dari Server.
-     * Kita hanya update TARGET, bukan posisi X/Y langsung.
+     * Kita hanya update TARGET, bukan posisi X/Y visual langsung.
      */
     public void setNetworkState(double serverX, double serverY, State serverState, Direction serverDir) {
         this.targetX = serverX;
@@ -81,7 +83,7 @@ public class VisualPlayer {
             y = targetY;
         }
         
-        // Anti-Teleport Jauh: Jika jarak terlalu jauh, snap langsung
+        // Anti-Teleport Jauh: Jika lag spike dan jarak terlalu jauh (> 3 blok), snap langsung
         double dist = Math.sqrt(Math.pow(targetX - x, 2) + Math.pow(targetY - y, 2));
         if (dist > 100) { 
             x = targetX;
@@ -96,7 +98,7 @@ public class VisualPlayer {
             Image img = loader.get(base + i);
             if (img != null) temp[idx++] = img;
         }
-        if (idx == 0) return new Image[]{ new javafx.scene.image.WritableImage(1, 1) };
+        if (idx == 0) return new Image[]{ new WritableImage(1, 1) }; // Fallback blank image
         Image[] frames = new Image[idx];
         System.arraycopy(temp, 0, frames, 0, idx);
         return frames;
@@ -106,6 +108,7 @@ public class VisualPlayer {
     public void update(double dt) {
         
         // 1. LOGIKA INTERPOLASI (SMOOTHING)
+        // x akan bergerak mendekati targetX sebesar fraksi tertentu setiap frame
         x += (targetX - x) * SMOOTHING_SPEED * dt;
         y += (targetY - y) * SMOOTHING_SPEED * dt;
 
@@ -157,7 +160,12 @@ public class VisualPlayer {
         }
 
         if (frame != null) {
+            // Render dengan Offset agar posisi kaki pas di tile
             g.drawImage(frame, x + offsetX, y + offsetY);
         }
     }
+
+    // --- PENTING: TAMBAHAN GETTER UNTUK GAME RENDERER (DEBUG MODE) ---
+    public double getX() { return x; }
+    public double getY() { return y; }
 }
