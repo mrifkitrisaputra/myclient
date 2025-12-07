@@ -132,12 +132,15 @@ public class LobbyScene {
                 boolean isPriv = privateCheck.isSelected();
                 String pass = passField.getText();
                 if(!name.isEmpty()) {
-                    // Send: CREATE_ROOM;Name;true/false;pass
+                    // 1. Simpan nama room yang ingin dibuat
+                    App.pendingRoomName = name;
+                    
+                    // 2. Kirim request ke server
                     if(App.network != null) 
                         App.network.send("CREATE_ROOM;" + name + ";" + isPriv + ";" + pass);
                     
-                    // Pindah scene langsung (validasi error server nanti via popup kalau mau advanced)
-                    SceneManager.toRoom(name);
+                    // CATATAN: KITA TIDAK PINDAH SCENE DISINI!
+                    // Kita menunggu PacketParser menerima "YOUR_ID" baru pindah.
                 }
             }
             return null;
@@ -146,9 +149,14 @@ public class LobbyScene {
     }
 
     private void joinRoomRequest(String name, String pass) {
+        // 1. Simpan nama room yang ingin dituju
+        App.pendingRoomName = name;
+        
+        // 2. Kirim request
         if(App.network != null) 
             App.network.send("JOIN_ROOM;" + name + ";" + pass);
-        SceneManager.toRoom(name);
+            
+        // CATATAN: KITA TIDAK PINDAH SCENE DISINI!
     }
 
     private void styleButton(Button btn, String colorHex) {

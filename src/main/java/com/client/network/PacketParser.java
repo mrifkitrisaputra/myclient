@@ -5,10 +5,11 @@ import java.util.List;
 
 import com.client.App;
 import com.client.ClientGameState;
-import com.client.entities.VisualPlayer;
 import com.client.render.SpriteLoader;
+import com.client.ui.SceneManager; 
 
 import javafx.application.Platform;
+import javafx.scene.control.Alert;
 
 public class PacketParser {
 
@@ -28,40 +29,50 @@ public class PacketParser {
         String data = parts.length > 1 ? parts[1] : "";
 
         switch (command) {
-            case "YOUR_ID" -> gameState.setMyPlayerId(Integer.parseInt(data));
-            
-            case "ROOM_UPDATE" -> parseRoomUpdate(data);
-            
-            case "ROOM_LIST" -> parseRoomList(data);
-            
-            case "GAME_STARTED" -> {
-                Platform.runLater(App::startGame); // Trigger pindah scene
+            // --- SERVER MENERIMA REQUEST MASUK ROOM ---
+            case "YOUR_ID" -> {
+                gameState.setMyPlayerId(Integer.parseInt(data));
+                
+                // Kunci Logika: Server sudah setuju, sekarang baru kita pindah visual ke Room
+                Platform.runLater(() -> {
+                    SceneManager.toRoom(App.pendingRoomName);
+                });
             }
             
+            // --- SERVER MENOLAK (PASSWORD SALAH DLL) ---
             case "ERROR" -> {
                 System.err.println("Server Error: " + data);
-                // Bisa tambahkan logic tampilkan alert di sini
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Join Failed");
+                    alert.setHeaderText("Cannot Join Room");
+                    alert.setContentText(data); // "Wrong Password" atau "Room Name Taken"
+                    alert.showAndWait();
+                });
             }
-            
+
+            case "ROOM_UPDATE" -> parseRoomUpdate(data);
+            case "ROOM_LIST" -> parseRoomList(data);
+            case "GAME_STARTED" -> Platform.runLater(App::startGame);
             case "MAP" -> parseMap(data);
             case "STATE" -> parseState(data);
         }
     }
-    
+
     private void parseRoomUpdate(String data) {
-        // format: HostID;ID1,ID2,ID3
-        String[] section = data.split(";");
-        int hostId = Integer.parseInt(section[0]);
-        String[] idsStr = section[1].split(",");
-        List<Integer> ids = new ArrayList<>();
-        for(String s : idsStr) {
-            if(!s.isEmpty()) ids.add(Integer.parseInt(s));
-        }
-        gameState.updateRoomPlayers(hostId, ids);
+        try {
+            String[] section = data.split(";");
+            int hostId = Integer.parseInt(section[0]);
+            String[] idsStr = section[1].split(",");
+            List<Integer> ids = new ArrayList<>();
+            for(String s : idsStr) {
+                if(!s.trim().isEmpty()) ids.add(Integer.parseInt(s.trim()));
+            }
+            gameState.updateRoomPlayers(hostId, ids);
+        } catch (Exception e) {}
     }
 
     private void parseRoomList(String data) {
-        // data: "Room A:(Public),Room B:(Private),"
         String[] raw = data.split(",");
         List<String> rooms = new ArrayList<>();
         for (String r : raw) {
@@ -70,9 +81,7 @@ public class PacketParser {
         gameState.updateRooms(rooms);
     }
 
-    // --- PARSERS LAMA (MAP, STATE) TETAP SAMA ---
     private void parseMap(String data) {
-        // ... (Kode parsing map sama seperti sebelumnya) ...
         try {
             String[] tokens = data.split(";");
             int rows = Integer.parseInt(tokens[0]);
@@ -96,7 +105,7 @@ public class PacketParser {
         if (section.isEmpty() || section.equals("NP")) { 
             gameState.clearPlayers(); return;
         }
-        List<VisualPlayer> updatedPlayers = new ArrayList<>();
+        List<com.client.entities.VisualPlayer> updatedPlayers = new ArrayList<>();
         String[] playersData = section.split("#");
         for (String pStr : playersData) {
             try {
@@ -107,9 +116,8 @@ public class PacketParser {
                 String stateStr = pVal[3]; 
                 String dirStr = pVal[4];   
                 
-                // Reuse existing object if possible (optimization)
-                VisualPlayer vp = new VisualPlayer(id, spriteLoader);
-                vp.setNetworkState(x, y, VisualPlayer.State.valueOf(stateStr), VisualPlayer.Direction.valueOf(dirStr));
+                var vp = new com.client.entities.VisualPlayer(id, spriteLoader);
+                vp.setNetworkState(x, y, com.client.entities.VisualPlayer.State.valueOf(stateStr), com.client.entities.VisualPlayer.Direction.valueOf(dirStr));
                 updatedPlayers.add(vp);
             } catch (Exception e) {}
         }

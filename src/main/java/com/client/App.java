@@ -2,7 +2,7 @@ package com.client;
 
 import java.io.IOException;
 
-import com.client.network.ClientNetworkManager; // Import baru
+import com.client.network.ClientNetworkManager;
 import com.client.network.InputSender;
 import com.client.render.GameCanvas;
 import com.client.ui.LoginScene;
@@ -19,6 +19,9 @@ public class App extends Application {
     
     public static ClientNetworkManager network;
     public static ClientGameState gameState;
+    
+    // BARU: Menyimpan nama room sementara saat request join/create
+    public static String pendingRoomName = ""; 
 
     @Override
     public void start(Stage stage) {
@@ -75,9 +78,6 @@ public class App extends Application {
         }).start();
     }
 
-    /**
-     * Memulai Game (Pindah ke Canvas)
-     */
     public static void startGame() {
         if (gameState == null || network == null) return;
         
