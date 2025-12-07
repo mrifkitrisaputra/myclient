@@ -1,0 +1,18 @@
+{
+    "sourceFile": "server/simple.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1765126338307,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1765126338307,
+            "name": "Commit-0",
+            "content": "public class simple {\r\n    \r\n}\r\n"
+        }
+    ]
+}

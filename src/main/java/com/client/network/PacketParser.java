@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.client.App;
 import com.client.ClientGameState;
+import com.client.entities.VisualPlayer; // Pastikan import ini ada
 import com.client.render.SpriteLoader;
 import com.client.ui.SceneManager; 
 
@@ -29,24 +30,22 @@ public class PacketParser {
         String data = parts.length > 1 ? parts[1] : "";
 
         switch (command) {
-            // --- SERVER MENERIMA REQUEST MASUK ROOM ---
             case "YOUR_ID" -> {
-                gameState.setMyPlayerId(Integer.parseInt(data));
-                
-                // Kunci Logika: Server sudah setuju, sekarang baru kita pindah visual ke Room
-                Platform.runLater(() -> {
-                    SceneManager.toRoom(App.pendingRoomName);
-                });
+                try {
+                    gameState.setMyPlayerId(Integer.parseInt(data));
+                    Platform.runLater(() -> {
+                        SceneManager.toRoom(App.pendingRoomName);
+                    });
+                } catch (Exception e) {}
             }
             
-            // --- SERVER MENOLAK (PASSWORD SALAH DLL) ---
             case "ERROR" -> {
                 System.err.println("Server Error: " + data);
                 Platform.runLater(() -> {
                     Alert alert = new Alert(Alert.AlertType.ERROR);
                     alert.setTitle("Join Failed");
                     alert.setHeaderText("Cannot Join Room");
-                    alert.setContentText(data); // "Wrong Password" atau "Room Name Taken"
+                    alert.setContentText(data);
                     alert.showAndWait();
                 });
             }
@@ -101,11 +100,19 @@ public class PacketParser {
         if (sections.length >= 1) parsePlayers(sections[0]);
     }
 
+    // --- BAGIAN UTAMA YANG DIPERBAIKI ---
     private void parsePlayers(String section) {
         if (section.isEmpty() || section.equals("NP")) { 
-            gameState.clearPlayers(); return;
+            gameState.clearPlayers(); 
+            return;
         }
-        List<com.client.entities.VisualPlayer> updatedPlayers = new ArrayList<>();
+
+        // 1. Ambil daftar player yang SAAT INI ada di game
+        List<VisualPlayer> currentPlayers = gameState.getPlayers();
+        
+        // 2. Siapkan list untuk frame berikutnya
+        List<VisualPlayer> nextFramePlayers = new ArrayList<>();
+        
         String[] playersData = section.split("#");
         for (String pStr : playersData) {
             try {
@@ -116,11 +123,32 @@ public class PacketParser {
                 String stateStr = pVal[3]; 
                 String dirStr = pVal[4];   
                 
-                var vp = new com.client.entities.VisualPlayer(id, spriteLoader);
-                vp.setNetworkState(x, y, com.client.entities.VisualPlayer.State.valueOf(stateStr), com.client.entities.VisualPlayer.Direction.valueOf(dirStr));
-                updatedPlayers.add(vp);
+                // 3. CARI: Apakah Player ID ini sudah ada di memori?
+                VisualPlayer targetPlayer = null;
+                for (VisualPlayer existing : currentPlayers) {
+                    if (existing.id == id) {
+                        targetPlayer = existing; // Ketemu! Pakai object lama
+                        break;
+                    }
+                }
+
+                if (targetPlayer != null) {
+                    // UPDATE: Object lama di-update datanya (Timer animasi jalan terus)
+                    targetPlayer.setNetworkState(x, y, VisualPlayer.State.valueOf(stateStr), VisualPlayer.Direction.valueOf(dirStr));
+                } else {
+                    // CREATE: Belum ada, bikin baru (Hanya terjadi 1x saat connect)
+                    targetPlayer = new VisualPlayer(id, spriteLoader);
+                    targetPlayer.setNetworkState(x, y, VisualPlayer.State.valueOf(stateStr), VisualPlayer.Direction.valueOf(dirStr));
+                }
+
+                // Masukkan ke list frame berikutnya
+                nextFramePlayers.add(targetPlayer);
+
             } catch (Exception e) {}
         }
-        gameState.updatePlayers(updatedPlayers);
+        
+        // 4. Update GameState dengan list yang berisi Object LAMA (yang sudah diupdate)
+        // Jadi timer animasi di dalam object tersebut tidak ter-reset.
+        gameState.updatePlayers(nextFramePlayers);
     }
 }

@@ -44,8 +44,8 @@ public class VisualPlayer {
     private final SpriteAnimation animDeath;
 
     // Offset visual (agar kaki player pas di kotak collision)
-    private final int offsetX = 7; 
-    private final int offsetY = 3; 
+    private final int offsetX = -1; 
+    private final int offsetY = -1; 
 
     public VisualPlayer(int id, SpriteLoader loader) {
         this.id = id;
