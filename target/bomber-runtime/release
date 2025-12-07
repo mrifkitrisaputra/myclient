@@ -1,0 +1,2 @@
+JAVA_VERSION="17.0.14"
+MODULES="java.base jdk.unsupported com.google.gson java.datatransfer java.xml java.prefs java.desktop javafx.base javafx.graphics javafx.controls java.scripting javafx.fxml javafx.media com.client"

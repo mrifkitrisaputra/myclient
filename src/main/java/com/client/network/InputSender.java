@@ -8,10 +8,6 @@ public class InputSender {
         this.network = network;
     }
 
-    // Format Protocol: INPUT;KEY;IS_PRESSED
-    // Contoh: INPUT;UP;TRUE  (Tombol atas ditekan)
-    // Contoh: INPUT;UP;FALSE (Tombol atas dilepas)
-    
     public void sendInput(String key, boolean isPressed) {
         String status = isPressed ? "TRUE" : "FALSE";
         network.send("INPUT;" + key + ";" + status);

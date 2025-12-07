@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1764833226093,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1765093405916,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,12 +7,8 @@\n     public InputSender(ClientNetworkManager network) {\r\n         this.network = network;\r\n     }\r\n \r\n-    // Format Protocol: INPUT;KEY;IS_PRESSED\r\n-    // Contoh: INPUT;UP;TRUE  (Tombol atas ditekan)\r\n-    // Contoh: INPUT;UP;FALSE (Tombol atas dilepas)\r\n-    \r\n     public void sendInput(String key, boolean isPressed) {\r\n         String status = isPressed ? \"TRUE\" : \"FALSE\";\r\n         network.send(\"INPUT;\" + key + \";\" + status);\r\n     }\r\n"
                 }
             ],
             "date": 1764833226093,

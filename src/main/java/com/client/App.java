@@ -2,7 +2,8 @@ package com.client;
 
 import java.io.IOException;
 
-import com.client.network.ClientNetworkManager;
+import com.client.network.ClientNetworkManager; // Import baru
+import com.client.network.InputSender;
 import com.client.render.GameCanvas;
 import com.client.ui.LoginScene;
 import com.client.ui.SceneManager;
@@ -16,7 +17,6 @@ public class App extends Application {
 
     private static Stage primaryStage;
     
-    // Global Access (Sederhana untuk skala ini)
     public static ClientNetworkManager network;
     public static ClientGameState gameState;
 
@@ -25,64 +25,50 @@ public class App extends Application {
         primaryStage = stage;
         SceneManager.setStage(stage);
 
-        // 1. Init Game State (Memori Data Game)
         gameState = new ClientGameState();
 
-        // 2. Tampilkan Login Scene dulu (Input IP)
         LoginScene login = new LoginScene(this::tryConnect);
-        stage.setMaximized(true);
         stage.setScene(login.getScene());
         stage.setTitle("Bomber Client - Connect");
+        
         stage.show();
+        stage.setMaximized(true);
     }
 
-    /**
-     * Logika Koneksi:
-     * Dipanggil saat tombol "Connect" di LoginScene ditekan.
-     */
     public void tryConnect(String ip) {
         int port = 5000;
         
-        // Safety: Close koneksi lama jika ada (misal retry setelah disconnect)
         if (network != null) {
             network.close();
-            network = null; // Pastikan null agar GC bisa bekerja
+            network = null;
         }
 
-        // PERBAIKAN: Gunakan variabel lokal 'manager' untuk inisialisasi
-        // Ini mencegah Race Condition jika 'network' static berubah di tengah jalan
         ClientNetworkManager manager = new ClientNetworkManager(ip, port, gameState);
-        network = manager; // Update global reference
+        network = manager; 
         
-        // Set callback jika putus koneksi saat main
         manager.setOnDisconnect(() -> Platform.runLater(() -> {
-            // Cek apakah manager yang putus ini adalah manager yang sedang aktif
             if (network == manager) {
                 showError("Connection Lost", "Disconnected from server.");
                 SceneManager.toLogin(this::tryConnect);
+                if (primaryStage != null) primaryStage.setMaximized(true);
             }
         }));
 
-        // Coba Konek (Jalankan di Thread terpisah agar UI tidak freeze)
         new Thread(() -> {
             try {
-                manager.connect(); // BLOCKING - Gunakan local variable 'manager'
-                
-                // Jika lolos baris ini, berarti sukses connect
+                manager.connect();
                 Platform.runLater(() -> {
-                    // Cek lagi apakah kita masih menggunakan manager yang sama
                     if (network == manager) {
                         System.out.println("Connected to " + ip);
-                        SceneManager.toLobby(); // Masuk Lobby
+                        SceneManager.toLobby();
                     }
                 });
-
             } catch (IOException e) {
                 Platform.runLater(() -> {
-                    // Hanya tampilkan error jika ini adalah attempt terakhir
                     if (network == manager) {
                         showError("Connection Failed", "Cannot reach server at " + ip + "\n" + e.getMessage());
                         SceneManager.toLogin(this::tryConnect);
+                        if (primaryStage != null) primaryStage.setMaximized(true);
                     }
                 });
             }
@@ -95,9 +81,17 @@ public class App extends Application {
     public static void startGame() {
         if (gameState == null || network == null) return;
         
+        // 1. Buat Canvas
         GameCanvas gameCanvas = new GameCanvas(gameState);
+        
+        // 2. Buat Pengirim Input
+        InputSender inputSender = new InputSender(network);
+
+        // 3. Mulai Loop Render
         gameCanvas.start();
-        SceneManager.toGame(gameCanvas);
+        
+        // 4. Pindah Scene (Bawa Canvas & InputSender)
+        SceneManager.toGame(gameCanvas, inputSender);
     }
 
     private void showError(String title, String content) {

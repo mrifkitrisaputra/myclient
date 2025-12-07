@@ -1,6 +1,7 @@
 package com.client.render;
 
 import com.client.ClientGameState;
+
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.input.KeyCode;

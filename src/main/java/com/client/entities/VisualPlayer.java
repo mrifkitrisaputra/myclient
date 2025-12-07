@@ -2,15 +2,26 @@ package com.client.entities;
 
 import com.client.render.SpriteAnimation;
 import com.client.render.SpriteLoader;
+
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 
 public class VisualPlayer {
 
-    // Posisi (Server Authoritative)
+    public int id; // ID Identitas Player
+    
+    // Posisi Target (Data asli dari Server)
+    private double targetX;
+    private double targetY;
+
+    // Posisi Visual (Yang digambar di layar, mengejar target)
     public double x;
     public double y;
     
+    // Kecepatan smoothing (Semakin besar = semakin responsif tapi bisa jitter dikit)
+    // 10.0 - 15.0 biasanya angka yang pas buat 2D top-down
+    private final double SMOOTHING_SPEED = 12.0;
+
     // Status Visual
     public enum State { IDLE, WALK, PLACE, DEAD }
     public enum Direction { DOWN, UP, LEFT, RIGHT }
@@ -31,10 +42,12 @@ public class VisualPlayer {
 
     private final SpriteAnimation animDeath;
 
-    private final int offsetX = 0; // Sesuaikan offset sprite jika perlu
-    private final int offsetY = -16; // Biasanya sprite char agak naik dari tile
+    private final int offsetX = 0; 
+    private final int offsetY = -16; 
 
-    public VisualPlayer(SpriteLoader loader) {
+    public VisualPlayer(int id, SpriteLoader loader) {
+        this.id = id;
+        
         // --- IDLE ---
         animIdleDown  = new SpriteAnimation(loadFrames(loader, "sP2DownIdle_", 1));
         animIdleUp    = new SpriteAnimation(loadFrames(loader, "sP2UpIdle_", 1));
@@ -52,15 +65,30 @@ public class VisualPlayer {
         animDeath.setLoop(false);
     }
 
-    // Dipanggil setiap kali terima paket dari Server
-    public void setNetworkState(double x, double y, State state, Direction dir) {
-        this.x = x;
-        this.y = y;
-        this.state = state;
-        this.dir = dir;
+    /**
+     * Dipanggil saat menerima paket data baru dari Server.
+     * Kita hanya update TARGET, bukan posisi X/Y langsung.
+     */
+    public void setNetworkState(double serverX, double serverY, State serverState, Direction serverDir) {
+        this.targetX = serverX;
+        this.targetY = serverY;
+        this.state = serverState;
+        this.dir = serverDir;
+
+        // Init posisi awal (jika visual belum punya posisi/baru spawn)
+        if (x == 0 && y == 0) {
+            x = targetX;
+            y = targetY;
+        }
+        
+        // Anti-Teleport Jauh: Jika jarak terlalu jauh, snap langsung
+        double dist = Math.sqrt(Math.pow(targetX - x, 2) + Math.pow(targetY - y, 2));
+        if (dist > 100) { 
+            x = targetX;
+            y = targetY;
+        }
     }
 
-    // Helper load frames
     private Image[] loadFrames(SpriteLoader loader, String base, int count) {
         Image[] temp = new Image[count];
         int idx = 0;
@@ -74,8 +102,14 @@ public class VisualPlayer {
         return frames;
     }
 
-    // Update hanya memajukan frame animasi
+    // Update dipanggil 60x per detik oleh GameCanvas
     public void update(double dt) {
+        
+        // 1. LOGIKA INTERPOLASI (SMOOTHING)
+        x += (targetX - x) * SMOOTHING_SPEED * dt;
+        y += (targetY - y) * SMOOTHING_SPEED * dt;
+
+        // 2. UPDATE ANIMASI
         switch (state) {
             case IDLE -> {
                 switch (dir) {
@@ -94,7 +128,7 @@ public class VisualPlayer {
                 }
             }
             case DEAD -> animDeath.update(dt);
-            case PLACE -> animIdleDown.update(dt); // Fallback
+            case PLACE -> animIdleDown.update(dt);
         }
     }
 
@@ -123,7 +157,6 @@ public class VisualPlayer {
         }
 
         if (frame != null) {
-            // Gambar di posisi X,Y yang dikirim server
             g.drawImage(frame, x + offsetX, y + offsetY);
         }
     }
