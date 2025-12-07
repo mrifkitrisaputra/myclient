@@ -2,6 +2,7 @@ package com.client.ui;
 
 import com.client.App;
 
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
@@ -18,6 +19,8 @@ import javafx.stage.Screen;
 
 public class RoomScene {
     private final Scene scene;
+    private final ListView<String> playerList;
+    private final Button btnStart;
 
     public RoomScene(String roomName) {
         BorderPane root = new BorderPane();
@@ -34,24 +37,29 @@ public class RoomScene {
         root.setTop(header);
 
         // PLAYER LIST
-        ListView<String> playerList = new ListView<>();
-        playerList.getItems().add("You (Connected)");
-        playerList.setStyle("-fx-control-inner-background: #34495e; -fx-text-fill: white;");
+        playerList = new ListView<>();
+        playerList.setStyle("-fx-control-inner-background: #34495e; -fx-text-fill: white; -fx-font-size: 16px;");
         root.setCenter(playerList);
 
+        // SYNC LOGIC
+        if (App.gameState != null) {
+            App.gameState.setOnRoomStateUpdate(v -> updateUI());
+            // Initial load
+            updateUI();
+        }
+
         // BUTTONS
-        Button btnStart = new Button("START GAME");
+        btnStart = new Button("START GAME");
         Button btnLeave = new Button("LEAVE ROOM");
         
         btnStart.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 16px;");
         btnLeave.setStyle("-fx-background-color: #c0392b; -fx-text-fill: white; -fx-font-size: 16px;");
 
+        // Logic Tombol Start (Default disabled, dinyalakan di updateUI)
+        btnStart.setDisable(true);
+
         btnStart.setOnAction(e -> {
-            // Kirim sinyal ke server bahwa host mau start
             if(App.network != null) App.network.send("START_GAME");
-            
-            // Untuk testing sekarang, langsung start local
-            App.startGame();
         });
 
         btnLeave.setOnAction(e -> {
@@ -66,6 +74,35 @@ public class RoomScene {
 
         Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
         this.scene = new Scene(root, screenBounds.getWidth(), screenBounds.getHeight());
+    }
+
+    private void updateUI() {
+        Platform.runLater(() -> {
+            playerList.getItems().clear();
+            
+            var ids = App.gameState.getRoomPlayerIds();
+            int myId = App.gameState.getMyPlayerId();
+            int hostId = App.gameState.getHostPlayerId();
+            
+            for (int id : ids) {
+                StringBuilder sb = new StringBuilder("Player " + id);
+                if (id == myId) sb.append(" (You)");
+                if (id == hostId) sb.append(" [HOST]");
+                playerList.getItems().add(sb.toString());
+            }
+
+            // Logic Button Start: Hanya Host DAN Player >= 2
+            boolean isHost = App.gameState.amIHost();
+            boolean enoughPlayers = ids.size() >= 2;
+            
+            if (isHost) {
+                btnStart.setDisable(!enoughPlayers);
+                btnStart.setText(enoughPlayers ? "START GAME" : "WAITING FOR PLAYERS...");
+            } else {
+                btnStart.setDisable(true);
+                btnStart.setText("WAITING FOR HOST...");
+            }
+        });
     }
 
     public Scene getScene() { return scene; }

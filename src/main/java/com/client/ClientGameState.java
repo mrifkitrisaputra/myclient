@@ -16,6 +16,11 @@ public class ClientGameState {
     private int[][] map;
     private boolean gameOver = false;
     private float gameTime = 0;
+    
+    // --- IDENTITY (Siapa saya & Host) ---
+    private int myPlayerId = -1;
+    private int hostPlayerId = -1;
+    private final List<Integer> roomPlayerIds = new ArrayList<>(); 
 
     // Entities
     private final List<VisualPlayer> players = new CopyOnWriteArrayList<>();
@@ -23,9 +28,12 @@ public class ClientGameState {
     private final List<VisualExplosion> explosions = new CopyOnWriteArrayList<>();
     private final List<VisualItem> items = new CopyOnWriteArrayList<>();
 
-    // --- DATA LOBBY (BARU) ---
+    // --- LOBBY DATA ---
     private final List<String> availableRooms = new ArrayList<>();
-    private Consumer<List<String>> onRoomListUpdate; // Callback untuk UI
+    
+    // --- CALLBACKS ---
+    private Consumer<List<String>> onRoomListUpdate; 
+    private Consumer<Void> onRoomStateUpdate; 
 
     // --- UPDATE VISUAL ---
     public void updateVisuals(double dt) {
@@ -34,7 +42,31 @@ public class ClientGameState {
         for (VisualExplosion e : explosions) e.update(dt);
     }
 
-    // --- LOBBY METHODS (BARU) ---
+    // --- IDENTITY METHODS ---
+    public void setMyPlayerId(int id) { this.myPlayerId = id; }
+    public int getMyPlayerId() { return myPlayerId; }
+    
+    public void setHostPlayerId(int id) { this.hostPlayerId = id; }
+    public int getHostPlayerId() { return hostPlayerId; }
+    
+    public boolean amIHost() { return myPlayerId == hostPlayerId; }
+
+    public void updateRoomPlayers(int hostId, List<Integer> ids) {
+        this.hostPlayerId = hostId;
+        synchronized (roomPlayerIds) {
+            roomPlayerIds.clear();
+            roomPlayerIds.addAll(ids);
+        }
+        if (onRoomStateUpdate != null) onRoomStateUpdate.accept(null);
+    }
+    
+    public List<Integer> getRoomPlayerIds() { return roomPlayerIds; }
+    
+    public void setOnRoomStateUpdate(Consumer<Void> callback) {
+        this.onRoomStateUpdate = callback;
+    }
+
+    // --- LOBBY METHODS ---
     public void setOnRoomListUpdate(Consumer<List<String>> callback) {
         this.onRoomListUpdate = callback;
     }
@@ -44,22 +76,17 @@ public class ClientGameState {
             availableRooms.clear();
             availableRooms.addAll(newRooms);
         }
-        // Beritahu UI jika ada listener
-        if (onRoomListUpdate != null) {
-            onRoomListUpdate.accept(newRooms);
-        }
+        if (onRoomListUpdate != null) onRoomListUpdate.accept(newRooms);
     }
     
-    public List<String> getAvailableRooms() {
-        return availableRooms;
-    }
+    public List<String> getAvailableRooms() { return availableRooms; }
 
     // --- SETTERS ---
     public void setMap(int[][] newMap) { this.map = newMap; }
     public void setGameTime(float time) { this.gameTime = time; }
     public void setGameOver(boolean status) { this.gameOver = status; }
 
-    // --- UPDATERS ---
+    // --- UPDATERS (Entity) ---
     public void updatePlayers(List<VisualPlayer> newPlayers) {
         players.clear(); players.addAll(newPlayers);
     }
@@ -74,7 +101,7 @@ public class ClientGameState {
     }
     public void clearPlayers() { players.clear(); }
 
-    // --- GETTERS ---
+    // --- GETTERS (INI YANG TADI HILANG) ---
     public int[][] getMap() { return map; }
     public List<VisualPlayer> getPlayers() { return players; }
     public List<VisualBomb> getBombs() { return bombs; }
