@@ -2,6 +2,7 @@ package com.client.ui;
 
 import com.client.App;
 
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
@@ -33,14 +34,28 @@ public class LobbyScene {
         BorderPane.setAlignment(title, Pos.CENTER);
         root.setTop(title);
 
-        // ROOM LIST (Diisi Server nanti)
+        // ROOM LIST
         ListView<String> roomList = new ListView<>();
-        roomList.getItems().add("Menunggu data server..."); 
         roomList.setStyle("-fx-control-inner-background: #34495e; -fx-text-fill: white;");
         
         VBox centerBox = new VBox(10, new Label("Available Rooms:") {{ setTextFill(Color.WHITE); }}, roomList);
         centerBox.setPadding(new Insets(20, 0, 20, 0));
         root.setCenter(centerBox);
+
+        // --- PENTING: LISTEN UPDATE DARI SERVER ---
+        // 1. Isi awal (jika data sudah ada)
+        if (App.gameState != null) {
+            roomList.getItems().addAll(App.gameState.getAvailableRooms());
+            
+            // 2. Set callback untuk update otomatis
+            App.gameState.setOnRoomListUpdate(rooms -> {
+                // Update UI wajib di JavaFX Thread
+                Platform.runLater(() -> {
+                    roomList.getItems().clear();
+                    roomList.getItems().addAll(rooms);
+                });
+            });
+        }
 
         // BUTTONS
         Button btnJoin = new Button("Join Selected");
@@ -52,24 +67,20 @@ public class LobbyScene {
         bottomBox.setAlignment(Pos.CENTER);
         root.setBottom(bottomBox);
 
-        // LOGIC
+        // LOGIC BUTTONS
         btnCreate.setOnAction(e -> {
             TextInputDialog dialog = new TextInputDialog("Room 1");
             dialog.setTitle("Create Room");
             dialog.setHeaderText("Masukkan Nama Room:");
             dialog.showAndWait().ifPresent(name -> {
-                // KIRIM PAKET KE SERVER: "CREATE_ROOM;name"
                 if(App.network != null) App.network.send("CREATE_ROOM;" + name);
-                
-                // Sementara langsung pindah UI (Optimistic UI)
                 SceneManager.toRoom(name);
             });
         });
         
         btnJoin.setOnAction(e -> {
             String selected = roomList.getSelectionModel().getSelectedItem();
-            if (selected != null && !selected.contains("Menunggu")) {
-                // KIRIM PAKET: "JOIN_ROOM;id"
+            if (selected != null) {
                 if(App.network != null) App.network.send("JOIN_ROOM;" + selected);
                 SceneManager.toRoom(selected);
             }

@@ -1,14 +1,14 @@
 package com.client.network; 
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.client.ClientGameState;
 import com.client.entities.VisualBomb;
 import com.client.entities.VisualExplosion;
-import com.client.entities.VisualItem;
 import com.client.entities.VisualPlayer;
+import com.client.entities.VisualItem;
 import com.client.render.SpriteLoader;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class PacketParser {
 
@@ -28,6 +28,7 @@ public class PacketParser {
         String data = parts.length > 1 ? parts[1] : "";
 
         switch (command) {
+            case "ROOM_LIST" -> parseRoomList(data); // BARU
             case "MAP" -> parseMap(data);
             case "STATE" -> parseState(data);
             case "TIME" -> {
@@ -35,6 +36,20 @@ public class PacketParser {
             }
             case "GAMEOVER" -> gameState.setGameOver(true);
         }
+    }
+
+    // --- PARSE ROOM LIST (BARU) ---
+    private void parseRoomList(String data) {
+        // data: "Room A,Room B,"
+        String[] names = data.split(",");
+        List<String> rooms = new ArrayList<>();
+        for (String name : names) {
+            if (!name.trim().isEmpty()) {
+                rooms.add(name.trim());
+            }
+        }
+        gameState.updateRooms(rooms);
+        System.out.println("Updated Room List: " + rooms);
     }
 
     private void parseMap(String data) {
@@ -80,14 +95,12 @@ public class PacketParser {
             if (pStr.isEmpty()) continue;
             try {
                 String[] pVal = pStr.split(",");
-                // Format: id,x,y,state,dir
                 int id = Integer.parseInt(pVal[0]); 
                 double x = Double.parseDouble(pVal[1]);
                 double y = Double.parseDouble(pVal[2]);
                 String stateStr = pVal[3]; 
                 String dirStr = pVal[4];   
 
-                // --- LOGIC BARU: CARI EXISTING PLAYER ---
                 VisualPlayer vp = null;
                 for (VisualPlayer existing : currentPlayers) {
                     if (existing.id == id) {
@@ -95,22 +108,15 @@ public class PacketParser {
                         break;
                     }
                 }
-
-                // Jika tidak ada, buat baru
                 if (vp == null) {
                     vp = new VisualPlayer(id, spriteLoader);
                 }
-
-                // Update data networknya
                 vp.setNetworkState(x, y, VisualPlayer.State.valueOf(stateStr), VisualPlayer.Direction.valueOf(dirStr));
-                
                 updatedPlayers.add(vp);
-
             } catch (Exception e) {
                 System.err.println("Error parsing player: " + pStr);
             }
         }
-        // Ganti list lama dengan list yang sudah diupdate
         gameState.updatePlayers(updatedPlayers);
     }
 
