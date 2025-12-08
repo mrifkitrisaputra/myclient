@@ -38,8 +38,11 @@ public class SimpleTestServer {
         if (lobbyClients.isEmpty()) return;
         StringBuilder sb = new StringBuilder("ROOM_LIST;");
         for (Room r : rooms.values()) {
-            String type = r.isPrivate ? "(Private)" : "(Public)";
-            sb.append(r.name).append(":").append(type).append(",");
+            // [UPDATE 1] Hanya tampilkan room jika game BELUM dimulai
+            if (!r.gameStarted) {
+                String type = r.isPrivate ? "(Private)" : "(Public)";
+                sb.append(r.name).append(":").append(type).append(",");
+            }
         }
         String msg = sb.toString();
         for (ClientHandler c : lobbyClients) c.send(msg);
@@ -208,12 +211,8 @@ public class SimpleTestServer {
         public void send(String msg) { if (out != null) out.println(msg); }
         
         public void sendRoomList() {
-            StringBuilder sb = new StringBuilder("ROOM_LIST;");
-            for (Room r : rooms.values()) {
-                String type = r.isPrivate ? "(Private)" : "(Public)";
-                sb.append(r.name).append(":").append(type).append(",");
-            }
-            send(sb.toString());
+            // Logic sendRoomList sama dengan logic global
+            SimpleTestServer.broadcastRoomList();
         }
 
         private void handleMessage(String msg) {
@@ -262,30 +261,34 @@ public class SimpleTestServer {
                          new Thread(() -> {
                              System.out.println("[ROOM " + currentRoom.name + "] Starting game...");
                              currentRoom.initGameMap();
-                             String mapData = currentRoom.getMapString();
+                             
+                             // [UPDATE 2] Set gameStarted true dan update lobby
                              currentRoom.gameStarted = true;
+                             SimpleTestServer.broadcastRoomList(); // Broadcast agar room hilang dari lobby
+                             
                              currentRoom.broadcast("GAME_STARTED");
+                             String mapData = currentRoom.getMapString();
                              currentRoom.broadcast("MAP;13;13;" + mapData);
                          }).start();
                     }
                 }
                 // --- INPUT HANDLER DENGAN DEBUG ---
                 else if (command.equals("INPUT") && currentRoom != null) {
-                     if (currentRoom.players.size() > playerId) {
-                         PlayerState p = currentRoom.players.get(playerId);
-                         String key = parts[1];
-                         boolean pressed = Boolean.parseBoolean(parts[2]); // FIX Input
-                         
-                         // Debug Print Input Masuk
-                         // System.out.println("[INPUT] Player " + playerId + " " + key + " = " + pressed);
+                      if (currentRoom.players.size() > playerId) {
+                          PlayerState p = currentRoom.players.get(playerId);
+                          String key = parts[1];
+                          boolean pressed = Boolean.parseBoolean(parts[2]); // FIX Input
+                          
+                          // Debug Print Input Masuk
+                          // System.out.println("[INPUT] Player " + playerId + " " + key + " = " + pressed);
 
-                         switch (key) {
+                          switch (key) {
                             case "UP"    -> p.up = pressed;
                             case "DOWN"  -> p.down = pressed;
                             case "LEFT"  -> p.left = pressed;
                             case "RIGHT" -> p.right = pressed;
                         }
-                     }
+                      }
                 }
                 else if (command.equals("ACTION") && parts.length > 1 && parts[1].equals("PLACE_BOMB") && currentRoom != null) {
                     if (playerId < currentRoom.players.size()) {
