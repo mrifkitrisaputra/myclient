@@ -4,7 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import com.client.App; // Import App untuk akses GameState
+import com.client.App; 
 import com.client.network.InputSender;
 import com.client.render.GameCanvas;
 
@@ -38,14 +38,46 @@ public class SceneManager {
     }
 
     public static void toGame(GameCanvas canvas, InputSender inputSender) {
+        // 1. Setup Root dengan StackPane (Canvas di layer bawah)
         StackPane root = new StackPane(canvas);
         Scene gameScene = new Scene(root);
         
         pressedKeys.clear();
 
+        // 2. Setup PauseMenu (Awalnya tidak ditambahkan ke root/hidden)
+        PauseMenu pauseMenu = new PauseMenu(
+            () -> { 
+                // Aksi Resume: Hapus menu, kembalikan fokus ke game
+                root.getChildren().remove(root.getChildren().size() - 1); 
+                canvas.requestFocus();
+            },
+            () -> App.leaveGame() // Aksi Leave: Panggil logic di App
+        );
+
         gameScene.setOnKeyPressed(e -> {
             KeyCode code = e.getCode();
             
+            // Cek apakah Menu sedang terbuka
+            boolean isMenuOpen = root.getChildren().contains(pauseMenu);
+
+            // --- LOGIC ESCAPE (PAUSE) ---
+            if (code == KeyCode.ESCAPE) {
+                if (isMenuOpen) {
+                    // Resume Game
+                    root.getChildren().remove(pauseMenu);
+                } else {
+                    // Pause Game
+                    root.getChildren().add(pauseMenu);
+                    // PENTING: Hentikan semua pergerakan saat menu dibuka
+                    resetMovement(inputSender); 
+                    pressedKeys.clear();
+                }
+                return; // Stop proses key lain
+            }
+
+            // Jika Menu Buka, BLOCK semua input game lain
+            if (isMenuOpen) return;
+
             // --- TOMBOL DEBUG (F3) ---
             if (code == KeyCode.F3) {
                 if (App.gameState != null) {
@@ -55,6 +87,7 @@ public class SceneManager {
                 return;
             }
 
+            // --- INPUT GAME (WASD/SPACE) ---
             if (!pressedKeys.contains(code)) {
                 pressedKeys.add(code);
                 handleInput(code, true, inputSender);
@@ -64,10 +97,16 @@ public class SceneManager {
 
         gameScene.setOnKeyReleased(e -> {
             KeyCode code = e.getCode();
+            boolean isMenuOpen = root.getChildren().contains(pauseMenu);
+            
+            // Jika Menu Buka, abaikan release (karena input sudah di-reset saat ESC ditekan)
+            if (isMenuOpen) return;
+
             pressedKeys.remove(code);
             handleInput(code, false, inputSender);
         });
 
+        // Listener resize window agar canvas mengikuti
         gameScene.widthProperty().addListener((obs, oldV, newV) -> canvas.setWidth(newV.doubleValue()));
         gameScene.heightProperty().addListener((obs, oldV, newV) -> canvas.setHeight(newV.doubleValue()));
 
@@ -92,5 +131,13 @@ public class SceneManager {
         if (keyCommand != null) {
             sender.sendInput(keyCommand, isPressed);
         }
+    }
+
+    // Helper untuk menghentikan paksa karakter saat menu dibuka
+    private static void resetMovement(InputSender sender) {
+        sender.sendInput("UP", false);
+        sender.sendInput("DOWN", false);
+        sender.sendInput("LEFT", false);
+        sender.sendInput("RIGHT", false);
     }
 }

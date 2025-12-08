@@ -16,4 +16,8 @@ public class InputSender {
     public void sendPlaceBomb() {
         network.send("ACTION;PLACE_BOMB");
     }
+
+    public void sendMessage(String msg) {
+        network.send(msg);
+    }
 }

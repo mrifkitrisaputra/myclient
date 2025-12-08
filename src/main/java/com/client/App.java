@@ -21,7 +21,8 @@ public class App extends Application {
     public static ClientGameState gameState;
     
     // BARU: Menyimpan nama room sementara saat request join/create
-    public static String pendingRoomName = ""; 
+    public static String pendingRoomName = "";
+    private static GameCanvas currentGameCanvas; 
 
     @Override
     public void start(Stage stage) {
@@ -82,16 +83,37 @@ public class App extends Application {
         if (gameState == null || network == null) return;
         
         // 1. Buat Canvas
-        GameCanvas gameCanvas = new GameCanvas(gameState);
+        currentGameCanvas = new GameCanvas(gameState);
         
         // 2. Buat Pengirim Input
         InputSender inputSender = new InputSender(network);
 
         // 3. Mulai Loop Render
-        gameCanvas.start();
+        currentGameCanvas.start();
         
         // 4. Pindah Scene (Bawa Canvas & InputSender)
-        SceneManager.toGame(gameCanvas, inputSender);
+        SceneManager.toGame(currentGameCanvas, inputSender);
+    }
+
+    public static void leaveGame() {
+        // 1. Matikan Render Loop agar tidak makan resource di lobby
+        if (currentGameCanvas != null) {
+            currentGameCanvas.stop(); 
+            currentGameCanvas = null;
+        }
+
+        // 2. Kirim paket LEAVE ke server
+        if (network != null) {
+            network.send("LEAVE_ROOM");
+        }
+
+        // 3. Bersihkan state client (opsional, biar bersih saat main lagi)
+        if (gameState != null) {
+            gameState.players.clear(); 
+        }
+
+        // 4. Pindah Scene kembali ke Lobby
+        SceneManager.toLobby();
     }
 
     private void showError(String title, String content) {

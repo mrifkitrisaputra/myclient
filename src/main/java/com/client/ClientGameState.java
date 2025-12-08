@@ -24,7 +24,7 @@ public class ClientGameState {
     private int myPlayerId = -1;
     private int hostPlayerId = -1;
     private final List<Integer> roomPlayerIds = new ArrayList<>(); 
-    private final List<VisualPlayer> players = new CopyOnWriteArrayList<>();
+    final List<VisualPlayer> players = new CopyOnWriteArrayList<>();
     private final List<VisualBomb> bombs = new CopyOnWriteArrayList<>();
     private final List<VisualExplosion> explosions = new CopyOnWriteArrayList<>();
     private final List<VisualItem> items = new CopyOnWriteArrayList<>();
