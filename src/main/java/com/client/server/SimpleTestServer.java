@@ -7,11 +7,11 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.HashSet; // Import baru
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;     // Import baru
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -61,13 +61,11 @@ public class SimpleTestServer {
         private double gameTime = 180.0; // 3 Menit
         private boolean isGameOver = false;
 
-        // --- Vote Rematch Data ---
         Set<Integer> rematchVotes = new HashSet<>();
 
         List<PlayerState> players = new CopyOnWriteArrayList<>();
         List<ClientHandler> clients = new CopyOnWriteArrayList<>();
         
-        // --- DATA BARU ---
         List<Bomb> bombs = new CopyOnWriteArrayList<>();
         List<Item> items = new CopyOnWriteArrayList<>();
         
@@ -100,7 +98,6 @@ public class SimpleTestServer {
 
         public synchronized void removePlayer(ClientHandler client, int playerId) {
             clients.remove(client);
-            // Hapus vote jika player keluar
             rematchVotes.remove(playerId);
 
             if (client == host && !clients.isEmpty()) {
@@ -117,30 +114,21 @@ public class SimpleTestServer {
             }
         }
 
-        // --- LOGIC RESTART GAME ---
         public synchronized void restartGame() {
             System.out.println("[ROOM " + name + "] RESTARTING GAME...");
-            
-            // 1. Reset Game State
             this.gameTime = 180.0;
             this.isGameOver = false;
             this.rematchVotes.clear();
             this.bombs.clear();
             this.items.clear();
             this.players.clear();
-
-            // 2. Generate Map Baru
             initGameMap();
-
-            // 3. Reset Pemain (Spawn ulang & Reset Stats)
             for (ClientHandler c : clients) {
                 double spawnX = (1 + c.playerId) * 32;
                 double spawnY = 32;
                 this.players.add(new PlayerState(c.playerId, spawnX, spawnY));
             }
-
-            // 4. Broadcast Info ke Client
-            broadcast("GAME_STARTED"); // Client akan menutup popup game over
+            broadcast("GAME_STARTED");
             String mapStr = getMapString();
             broadcast("MAP;13;13;" + mapStr);
             broadcastRoomInfo();
@@ -159,110 +147,100 @@ public class SimpleTestServer {
         }
 
         @Override
-public void run() {
-    long lastTime = System.nanoTime();
+        public void run() {
+            long lastTime = System.nanoTime();
 
-    while (isRunning) {
-        try {
-            long now = System.nanoTime();
-            // Hitung Delta Time (selisih waktu dalam detik)
-            double dt = (now - lastTime) / 1_000_000_000.0;
-            lastTime = now;
+            while (isRunning) {
+                try {
+                    long now = System.nanoTime();
+                    double dt = (now - lastTime) / 1_000_000_000.0;
+                    lastTime = now;
 
-            // SAFETY: Batasi dt agar jika lag parah, player tidak tembus tembok (teleport)
-            if (dt > 0.05) dt = 0.05; 
+                    if (dt > 0.05) dt = 0.05; 
+                    Thread.sleep(16); 
 
-            // Thread sleep tetap ada untuk menjaga penggunaan CPU rendah
-            Thread.sleep(16); 
+                    if (!gameStarted || clients.isEmpty() || collisionHandler == null || isGameOver) continue;
 
-            if (!gameStarted || clients.isEmpty() || collisionHandler == null || isGameOver) continue;
+                    gameTime -= dt;
+                    if (gameTime <= 0) {
+                        gameTime = 0;
+                        isGameOver = true;
+                        broadcast("GAME_OVER;TIME_UP");
+                    }
 
-            // --- TIMER ---
-            gameTime -= dt;
-            if (gameTime <= 0) {
-                gameTime = 0;
-                isGameOver = true;
-                broadcast("GAME_OVER;TIME_UP");
-            }
+                    for (Bomb b : bombs) {
+                        b.tick();
+                    }
+                    bombs.removeIf(b -> b.exploded);
 
-            // --- BOMB TICK ---
-            for (Bomb b : bombs) {
-                b.tick();
-            }
-            bombs.removeIf(b -> b.exploded);
+                    double multiplier = dt * 60.0; // Fix Speed Accumulation
 
-            // --- PHYSICS UPDATE (DENGAN DELTA TIME) ---
-            // Target: 60 FPS. Jika dt 0.016 (normal), multiplier = 1.0.
-            double multiplier = dt * 45.0; 
+                    for (PlayerState p : players) {
+                        if (p.dead) continue;
 
-            for (PlayerState p : players) {
-                if (p.dead) continue;
+                        // Logic Speed Up Timer
+                        if (p.speedTimer > 0) {
+                            p.speedTimer -= dt;
+                            if (p.speedTimer <= 0) {
+                                p.speed = p.DEFAULT_SPEED;
+                                p.speedTimer = 0;
+                            }
+                        }
 
-                double nextX = p.x;
-                double nextY = p.y;
+                        double nextX = p.x;
+                        double nextY = p.y;
+                        double moveAmt = p.speed * multiplier;
+
+                        if (p.left)  nextX -= moveAmt;
+                        if (p.right) nextX += moveAmt;
+                        if (p.up)    nextY -= moveAmt;
+                        if (p.down)  nextY += moveAmt;
+
+                        boolean collideMapX = collisionHandler.checkCollision(nextX, p.y);
+                        boolean collidePlayerX = collisionHandler.checkPlayerCollision(nextX, p.y, p, players);
+
+                        if (!collideMapX && !collidePlayerX) p.x = nextX;
+
+                        boolean collideMapY = collisionHandler.checkCollision(p.x, nextY);
+                        boolean collidePlayerY = collisionHandler.checkPlayerCollision(p.x, nextY, p, players);
+
+                        if (!collideMapY && !collidePlayerY) p.y = nextY;
+
+                        p.updateAnimLogic();
+                        checkItemPickup(p);
+                    }
+
+                    StringBuilder sb = new StringBuilder("STATE;");
+                    sb.append((int) Math.ceil(gameTime)).append(";");
+
+                    for (int i = 0; i < players.size(); i++) {
+                        PlayerState p = players.get(i);
+                        sb.append(p.id).append(",")
+                                .append((int) p.x).append(",")
+                                .append((int) p.y).append(",")
+                                .append(p.currentState).append(",")
+                                .append(p.currentDir);
+                        if (i < players.size() - 1) sb.append("#");
+                    }
+                    sb.append("|||");
+                    broadcast(sb.toString());
+
+                } catch (Exception e) {
+                    System.err.println("Game Loop Error: " + e.getMessage());
+                }
                 
-                // Gunakan multiplier agar speed konsisten berapapun jumlah playernya
-                double moveAmt = p.speed * multiplier; 
-
-                if (p.left)  nextX -= moveAmt;
-                if (p.right) nextX += moveAmt;
-                if (p.up)    nextY -= moveAmt;
-                if (p.down)  nextY += moveAmt;
-
-                // Cek collision MAP dan PLAYER dan BOMB
-                boolean collideMapX = collisionHandler.checkCollision(nextX, p.y);
-                boolean collidePlayerX = collisionHandler.checkPlayerCollision(nextX, p.y, p, players);
-
-                if (!collideMapX && !collidePlayerX) {
-                    p.x = nextX;
+                long aliveCount = players.stream().filter(p -> !p.dead).count();
+                if (gameStarted && players.size() > 1 && aliveCount <= 1 && !isGameOver) {
+                    isGameOver = true;
+                    int winnerId = -1;
+                    for (PlayerState p : players) {
+                        if (!p.dead) { winnerId = p.id; break; }
+                    }
+                    broadcast("GAME_OVER;" + winnerId);
                 }
-
-                boolean collideMapY = collisionHandler.checkCollision(p.x, nextY);
-                boolean collidePlayerY = collisionHandler.checkPlayerCollision(p.x, nextY, p, players);
-
-                if (!collideMapY && !collidePlayerY) {
-                    p.y = nextY;
-                }
-
-                p.updateAnimLogic();
-                checkItemPickup(p);
             }
-            
-            // ... (Kode Broadcast State & Win Condition Tetap Sama) ...
-            
-            // --- BROADCAST STATE ---
-            StringBuilder sb = new StringBuilder("STATE;");
-            sb.append((int) Math.ceil(gameTime)).append(";");
-
-            for (int i = 0; i < players.size(); i++) {
-                PlayerState p = players.get(i);
-                sb.append(p.id).append(",")
-                        .append((int) p.x).append(",")
-                        .append((int) p.y).append(",")
-                        .append(p.currentState).append(",")
-                        .append(p.currentDir);
-                if (i < players.size() - 1) sb.append("#");
-            }
-            sb.append("|||");
-            broadcast(sb.toString());
-
-        } catch (Exception e) {
-            System.err.println("Game Loop Error: " + e.getMessage());
         }
         
-        // ... (Kode Check Win Condition Tetap Sama) ...
-         long aliveCount = players.stream().filter(p -> !p.dead).count();
-         if (gameStarted && players.size() > 1 && aliveCount <= 1 && !isGameOver) {
-             isGameOver = true;
-             int winnerId = -1;
-             for (PlayerState p : players) {
-                 if (!p.dead) { winnerId = p.id; break; }
-             }
-             broadcast("GAME_OVER;" + winnerId);
-         }
-    }
-}
-        // --- LOGIC ITEM PICKUP ---
         private void checkItemPickup(PlayerState p) {
             int tileSize = 32;
             int pGridX = (int) ((p.x + tileSize / 2) / tileSize);
@@ -270,11 +248,15 @@ public void run() {
 
             for (Item item : items) {
                 if (item.x == pGridX && item.y == pGridY) {
-                    // Apply Effect
                     switch (item.type) {
-                        case BOMB_UP -> p.maxBombs++;
-                        case FIRE_UP -> p.fireRange++;
-                        case SPEED_UP -> p.speed += 1.0;
+                        case BOMB_UP -> p.bonusBombStock++;
+                        case FIRE_UP -> p.hasFirePowerUp = true;
+                        case SPEED_UP -> {
+                            if (p.speedTimer <= 0) {
+                                p.speed = 5.0; 
+                                p.speedTimer = 5.0; 
+                            }
+                        }
                     }
                     items.remove(item);
                     broadcast("ITEM_PICKED;" + p.id + "," + item.x + "," + item.y + "," + item.type.name());
@@ -283,12 +265,10 @@ public void run() {
             }
         }
 
-        // --- LOGIC HANCURKAN TILE ---
         public void breakTile(int tx, int ty) {
-            mapData[tx][ty] = 0; // Jadi lantai kosong
+            mapData[tx][ty] = 0; 
             broadcast("BREAK_TILE;" + tx + "," + ty);
 
-            // Random Drop Item (30% chance)
             Random random = new Random();
             if (random.nextDouble() < 0.3) {
                 double r = random.nextDouble();
@@ -304,17 +284,16 @@ public void run() {
         
         public boolean isSolidTile(int tx, int ty) {
              if (tx < 0 || ty < 0 || tx >= mapData.length || ty >= mapData[0].length) return true;
-             return mapData[tx][ty] == 1; // Wall keras
+             return mapData[tx][ty] == 1; 
         }
 
         public boolean isBreakableTile(int tx, int ty) {
             if (tx < 0 || ty < 0 || tx >= mapData.length || ty >= mapData[0].length) return false;
-            return mapData[tx][ty] == 2; // Wall hancur
+            return mapData[tx][ty] == 2; 
         }
 
         public void initGameMap() {
             this.mapData = MapGenerator.generateMapArray(13, 13);
-            // Pass bombs ke CollisionHandler
             this.collisionHandler = new CollisionHandler(this.mapData, 32, this.bombs);
         }
 
@@ -323,7 +302,7 @@ public void run() {
         }
     }
     
-    // ===================== CLASS BOMB =======================
+    // ===================== CLASS BOMB (Fixed Center Hit) =======================
     static class Bomb {
         int x, y, ownerId, range;
         int timer = 60; 
@@ -351,17 +330,17 @@ public void run() {
             exploded = true;
             List<String> parts = new ArrayList<>(); 
             
-            // Visual Pusat
+            // 1. Tambahkan Center ke Visual
             parts.add(x + "," + y + ",false");
 
-            // --- FIX 2: CEK PLAYER DI TITIK TENGAH BOM ---
+            // 2. [FIX] Cek kematian di titik center (0,0) sebelum loop ray
             checkPlayerHit(x, y); 
-            // ---------------------------------------------
 
-            calculateRay(1, 0, parts);  // Kanan
-            calculateRay(-1, 0, parts); // Kiri
-            calculateRay(0, 1, parts);  // Bawah
-            calculateRay(0, -1, parts); // Atas
+            // 3. Hitung Ray (Lidah Api)
+            calculateRay(1, 0, parts);  
+            calculateRay(-1, 0, parts); 
+            calculateRay(0, 1, parts);  
+            calculateRay(0, -1, parts); 
             
             StringBuilder sb = new StringBuilder("EXPLOSION;").append(x).append(",").append(y);
             for(String p : parts) sb.append(";").append(p);
@@ -375,11 +354,11 @@ public void run() {
             }
         }
         
-        // Method helper baru untuk cek kill player
         private void checkPlayerHit(int tx, int ty) {
             for (PlayerState p : room.players) {
                 int px = (int)((p.x + 16)/32);
                 int py = (int)((p.y + 16)/32);
+                // Hitbox sederhana: jika berada di grid yang sama -> MATI
                 if (px == tx && py == ty && !p.dead) {
                     p.dead = true;
                     p.currentState = "DEAD";
@@ -389,16 +368,17 @@ public void run() {
         }
         
         private void calculateRay(int dx, int dy, List<String> parts) {
-            for (int i = 1; i <= range; i++) {
+            // Loop dari 1 sampai Range.
+            // Jika Range = 3, maka i = 1, 2, 3.
+            // Total Tiles = Center(1) + Ray(3) = 4 Tiles.
+            for (int i = 1; i < range; i++) {
                 int tx = x + (dx * i);
                 int ty = y + (dy * i);
 
                 if (room.isSolidTile(tx, ty)) break;
 
                 parts.add(tx + "," + ty + "," + (dy!=0));
-
-                // Panggil helper yang baru dibuat
-                checkPlayerHit(tx, ty);
+                checkPlayerHit(tx, ty); // Cek player di lidah api
                 
                 if (room.isBreakableTile(tx, ty)) {
                     room.breakTile(tx, ty);
@@ -491,62 +471,41 @@ public void run() {
                     }
                 } else if (command.equals("START_GAME") && currentRoom != null) {
                     if (currentRoom.host == this && currentRoom.clients.size() >= 1) {
-        
-        // Cek apakah ini Restart (Game Over) atau Start Awal (Game Belum Mulai)
-        if (currentRoom.isGameOver || !currentRoom.gameStarted) {
-             // Logic Restart/Start digabung
-             new Thread(() -> {
-                System.out.println("[ROOM " + currentRoom.name + "] Starting/Restarting game...");
-                
-                // Jika restart, reset dulu variable state-nya
-                if (currentRoom.isGameOver) {
-                    currentRoom.rematchVotes.clear();
-                    currentRoom.bombs.clear();
-                    currentRoom.items.clear();
-                    currentRoom.players.clear();
-                    currentRoom.gameTime = 180.0;
-                    currentRoom.isGameOver = false;
-                    // Reset posisi player
-                    currentRoom.initGameMap(); // Regen Map
-                    for (ClientHandler c : currentRoom.clients) {
-                        double spawnX = (1 + c.playerId) * 32;
-                        double spawnY = 32;
-                        currentRoom.players.add(new PlayerState(c.playerId, spawnX, spawnY));
+                        if (currentRoom.isGameOver || !currentRoom.gameStarted) {
+                             new Thread(() -> {
+                                System.out.println("[ROOM " + currentRoom.name + "] Starting/Restarting game...");
+                                if (currentRoom.isGameOver) {
+                                    currentRoom.rematchVotes.clear();
+                                    currentRoom.bombs.clear();
+                                    currentRoom.items.clear();
+                                    currentRoom.players.clear();
+                                    currentRoom.gameTime = 180.0;
+                                    currentRoom.isGameOver = false;
+                                    currentRoom.initGameMap(); 
+                                    for (ClientHandler c : currentRoom.clients) {
+                                        double spawnX = (1 + c.playerId) * 32;
+                                        double spawnY = 32;
+                                        currentRoom.players.add(new PlayerState(c.playerId, spawnX, spawnY));
+                                    }
+                                } else {
+                                    currentRoom.initGameMap();
+                                }
+                                currentRoom.gameStarted = true;
+                                SimpleTestServer.broadcastRoomList();
+                                currentRoom.broadcast("GAME_STARTED");
+                                String mapData = currentRoom.getMapString();
+                                currentRoom.broadcast("MAP;13;13;" + mapData);
+                                currentRoom.broadcastRoomInfo();
+                            }).start();
+                        }
                     }
-                } else {
-                    // Start awal
-                    currentRoom.initGameMap();
-                }
-
-                currentRoom.gameStarted = true;
-                SimpleTestServer.broadcastRoomList();
-                
-                // Kirim Sinyal Start
-                currentRoom.broadcast("GAME_STARTED");
-                
-                String mapData = currentRoom.getMapString();
-                currentRoom.broadcast("MAP;13;13;" + mapData);
-                
-                // Broadcast info room terbaru (agar client tau posisi/state awal)
-                currentRoom.broadcastRoomInfo();
-            }).start();
-        }
-    }
                 } else if (command.equals("VOTE_REMATCH") && currentRoom != null) {
-                    // --- LOGIC BARU: VOTE REMATCH ---
                     synchronized (currentRoom) {
-        // 1. Tambah Vote
-        currentRoom.rematchVotes.add(playerId);
-        
-        int currentVotes = currentRoom.rematchVotes.size();
-        int totalPlayers = currentRoom.clients.size();
-        
-        // 2. JANGAN Restart otomatis.
-        // Kirim update jumlah vote ke semua client agar label berubah
-        currentRoom.broadcast("REMATCH_UPDATE;" + currentVotes + ";" + totalPlayers);
-        
-        System.out.println("[ROOM] Rematch Vote Update: " + currentVotes + "/" + totalPlayers);
-    }
+                        currentRoom.rematchVotes.add(playerId);
+                        int currentVotes = currentRoom.rematchVotes.size();
+                        int totalPlayers = currentRoom.clients.size();
+                        currentRoom.broadcast("REMATCH_UPDATE;" + currentVotes + ";" + totalPlayers);
+                    }
                 } else if (command.equals("INPUT") && currentRoom != null) {
                     if (currentRoom.players.size() > playerId) {
                         PlayerState p = currentRoom.players.get(playerId);
@@ -562,21 +521,35 @@ public void run() {
                 } else if (command.equals("ACTION") && parts.length > 1 && parts[1].equals("PLACE_BOMB") && currentRoom != null) {
                     if (playerId < currentRoom.players.size()) {
                         PlayerState p = currentRoom.players.get(playerId);
-                        // Cek max bombs
-                        if (p.activeBombs < p.maxBombs && !p.dead) {
+                        
+                        int currentCapacity = p.DEFAULT_MAX_BOMBS + p.bonusBombStock;
+                        
+                        if (p.activeBombs < currentCapacity && !p.dead) {
                             int tx = (int) ((p.x + 16) / 32);
                             int ty = (int) ((p.y + 16) / 32);
                             
-                            // Cek apakah tile kosong dan tidak ada bom lain
                             boolean canPlace = !currentRoom.isSolidTile(tx, ty);
                             for(Bomb b : currentRoom.bombs) {
                                 if(b.x == tx && b.y == ty) { canPlace = false; break; }
                             }
                             
                             if(canPlace) {
-                                Bomb bomb = new Bomb(tx, ty, playerId, p.fireRange, currentRoom);
+                                int range = p.DEFAULT_RANGE;
+                                if (p.hasFirePowerUp) {
+                                    // [FIX] RANGE SET TO 3 
+                                    // (Total Coverage = Center(1) + Ray(3) = 4 Tiles)
+                                    range += 1; 
+                                    p.hasFirePowerUp = false; 
+                                }
+
+                                Bomb bomb = new Bomb(tx, ty, playerId, range, currentRoom);
                                 currentRoom.bombs.add(bomb);
                                 p.activeBombs++;
+                                
+                                if (p.activeBombs > p.DEFAULT_MAX_BOMBS && p.bonusBombStock > 0) {
+                                    p.bonusBombStock--;
+                                }
+
                                 currentRoom.broadcast("BOMB_PLACED;" + tx + "," + ty + ";" + playerId);
                             }
                         }
@@ -596,13 +569,13 @@ public void run() {
         }
     }
 
-    // ===================== COLLISION HANDLER =======================
+    // ===================== COLLISION HANDLER & MAP GEN (SAME) =======================
     static class CollisionHandler {
         private final int[][] map;
         private final int tileSize;
         public final double hitboxSize = 20.5;
         public final double offset;
-        private final List<Bomb> bombs; // Reference ke bombs room
+        private final List<Bomb> bombs; 
 
         public CollisionHandler(int[][] map, int tileSize, List<Bomb> bombs) {
             this.map = map;
@@ -616,7 +589,6 @@ public void run() {
             double top = y + offset;
             double right = left + hitboxSize;
             double bottom = top + hitboxSize;
-
             return isSolid(left, top) || isSolid(right, top) || isSolid(left, bottom) || isSolid(right, bottom);
         }
 
@@ -625,18 +597,13 @@ public void run() {
             double selfT = newY + offset;
             double selfR = selfL + hitboxSize;
             double selfB = selfT + hitboxSize;
-
             for (PlayerState other : allPlayers) {
-                if (other == self || other.dead) continue; // Jangan tabrak mayat
-
+                if (other == self || other.dead) continue; 
                 double otherL = other.x + offset;
                 double otherT = other.y + offset;
                 double otherR = otherL + hitboxSize;
                 double otherB = otherT + hitboxSize;
-
-                if (selfL < otherR && selfR > otherL && selfT < otherB && selfB > otherT) {
-                    return true;
-                }
+                if (selfL < otherR && selfR > otherL && selfT < otherB && selfB > otherT) return true;
             }
             return false;
         }
@@ -645,58 +612,35 @@ public void run() {
             int gridX = (int) (px / tileSize);
             int gridY = (int) (py / tileSize);
             if (gridX < 0 || gridY < 0 || gridX >= map.length || gridY >= map[0].length) return true;
-            
-            // 1. Cek Map (1=Wall, 2=Breakable)
             int t = map[gridX][gridY];
             if (t == 1 || t == 2) return true;
-            
-            // 2. Cek Bomb Solid
             if(bombs != null) {
                 for(Bomb b : bombs) {
-                    // Bomb solid jika isSolid=true dan belum meledak
-                    if(!b.exploded && b.isSolid && b.x == gridX && b.y == gridY) {
-                        return true;
-                    }
+                    if(!b.exploded && b.isSolid && b.x == gridX && b.y == gridY) return true;
                 }
             }
             return false;
         }
     }
 
-    // ===================== MAP GENERATOR =======================
     static class MapGenerator {
         public static int[][] generateMapArray(int w, int h) {
             int[][] map = new int[w][h];
             Random rand = new Random();
             for (int y = 0; y < h; y++) {
                 for (int x = 0; x < w; x++) {
-                    if (x == 0 || y == 0 || x == w - 1 || y == h - 1) {
-                        map[x][y] = 1; continue;
-                    }
-                    if (x % 2 == 0 && y % 2 == 0) {
-                        map[x][y] = 1; continue;
-                    }
-                    if (rand.nextDouble() < 0.70) {
-                        map[x][y] = 2; // Breakable
-                    } else {
-                        map[x][y] = 0;
-                    }
+                    if (x == 0 || y == 0 || x == w - 1 || y == h - 1) { map[x][y] = 1; continue; }
+                    if (x % 2 == 0 && y % 2 == 0) { map[x][y] = 1; continue; }
+                    if (rand.nextDouble() < 0.70) { map[x][y] = 2; } else { map[x][y] = 0; }
                 }
             }
-            // Clear spawn area
-            if (w > 2 && h > 3) {
-                map[1][1] = 0; map[1][2] = 0; map[1][3] = 0;
-                map[2][1] = 0; map[3][1] = 0;
-            }
+            if (w > 2 && h > 3) { map[1][1] = 0; map[1][2] = 0; map[1][3] = 0; map[2][1] = 0; map[3][1] = 0; }
             return map;
         }
-
         public static String convertToString(int[][] map) {
             StringBuilder sb = new StringBuilder();
             for (int y = 0; y < map[0].length; y++) {
-                for (int x = 0; x < map.length; x++) {
-                    sb.append(map[x][y]).append(",");
-                }
+                for (int x = 0; x < map.length; x++) { sb.append(map[x][y]).append(","); }
             }
             return sb.toString();
         }
@@ -713,23 +657,24 @@ public void run() {
         String currentDir = "DOWN";
         boolean dead = false;
         
-        // --- STATS ---
-        int maxBombs = 1;
+        final int DEFAULT_MAX_BOMBS = 1;
+        final int DEFAULT_RANGE = 2;
+        final double DEFAULT_SPEED = 3.0;
+
         int activeBombs = 0;
-        int fireRange = 1;
-        double speed = 3.0;
+        double speed = DEFAULT_SPEED;
+        
+        int bonusBombStock = 0; 
+        boolean hasFirePowerUp = false; 
+        double speedTimer = 0; 
 
         public PlayerState(int id, double x, double y) {
             this.id = id; this.x = x; this.y = y;
         }
 
         public void updateAnimLogic() {
-            if (dead) {
-                currentState = "DEAD";
-                return;
-            }
+            if (dead) { currentState = "DEAD"; return; }
             boolean isMoving = up || down || left || right;
-
             if (isMoving) {
                 currentState = "WALK";
                 if (down)      currentDir = "DOWN";
