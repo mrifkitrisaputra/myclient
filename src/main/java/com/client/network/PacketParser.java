@@ -23,7 +23,8 @@ public class PacketParser {
     }
 
     public void parse(String packet) {
-        if (packet == null || packet.isEmpty()) return;
+        if (packet == null || packet.isEmpty())
+            return;
 
         // Pisahkan command utama dengan datanya
         String[] parts = packet.split(";", 2);
@@ -40,7 +41,7 @@ public class PacketParser {
                     String[] coords = info[0].split(",");
                     int bx = Integer.parseInt(coords[0]);
                     int by = Integer.parseInt(coords[1]);
-                    
+
                     gameState.addBomb(bx, by);
                     System.out.println("[CLIENT] Bomb spawned at " + bx + "," + by);
                 } catch (Exception e) {
@@ -52,12 +53,12 @@ public class PacketParser {
                 // Server: EXPLOSION;centerX,centerY;part1;part2...
                 try {
                     String[] sections = data.split(";");
-                    
+
                     // 1. Ambil Pusat Ledakan & Hapus Bom Visualnya
                     String[] center = sections[0].split(",");
                     int cx = Integer.parseInt(center[0]);
                     int cy = Integer.parseInt(center[1]);
-                    
+
                     gameState.removeBombAt(cx, cy);
                     gameState.addExplosion(cx, cy, false);
 
@@ -81,7 +82,8 @@ public class PacketParser {
                     int tx = Integer.parseInt(coords[0]);
                     int ty = Integer.parseInt(coords[1]);
                     gameState.breakTile(tx, ty);
-                } catch (Exception e) {}
+                } catch (Exception e) {
+                }
             }
 
             case "SPAWN_ITEM" -> {
@@ -92,7 +94,8 @@ public class PacketParser {
                     int iy = Integer.parseInt(info[1]);
                     String type = info[2];
                     gameState.spawnItem(ix, iy, type);
-                } catch (Exception e) {}
+                } catch (Exception e) {
+                }
             }
 
             case "ITEM_PICKED" -> {
@@ -103,7 +106,8 @@ public class PacketParser {
                     int ix = Integer.parseInt(info[1]);
                     int iy = Integer.parseInt(info[2]);
                     gameState.removeItemAt(ix, iy);
-                } catch (Exception e) {}
+                } catch (Exception e) {
+                }
             }
 
             // ================= DEATH & GAME OVER =================
@@ -112,7 +116,7 @@ public class PacketParser {
                 // Server: PLAYER_DIED;id
                 try {
                     int deadId = Integer.parseInt(data);
-                    
+
                     // Cek apakah ID yang mati adalah ID saya sendiri
                     if (deadId == gameState.getMyPlayerId()) {
                         System.out.println("[CLIENT] You Died!");
@@ -141,7 +145,7 @@ public class PacketParser {
                         // Menang sendirian (Last Man Standing)
                         int winnerId = Integer.parseInt(gParts[1]);
                         isWin = (winnerId == myId);
-                        
+
                     } else if (type.equals("SURVIVORS")) {
                         // Menang rame-rame (Time Up Survival)
                         String[] survivorIds = gParts[1].split(",");
@@ -151,26 +155,33 @@ public class PacketParser {
                                 break;
                             }
                         }
-                        
+
                     } else if (type.equals("DRAW") || type.equals("TIME_UP")) {
                         // Tidak ada yang menang
                         isWin = false;
                     }
-                    
+
                 } catch (Exception e) {
                     System.err.println("Error parsing GAME_OVER: " + e.getMessage());
                 }
 
+                System.out.println("[CLIENT] Cleaning up game state due to GAME_OVER");
+                gameState.setGameOver(true);
+                gameState.clearBombs(); // Hapus semua bom
+                gameState.clearItems(); // Hapus item
+                gameState.clearExplosions(); // Hapus ledakan (biar bersih)
+                // -----------------------------------
+
                 final boolean winStatus = isWin;
                 System.out.println("[CLIENT] Game Over. You Win? " + winStatus);
-                
+
                 Platform.runLater(() -> SceneManager.showGameOverPopup(winStatus));
             }
 
             // ================= STATE & SYNC =================
 
             case "STATE" -> parseState(data); // Posisi Player & Waktu
-            case "MAP" -> parseMap(data);     // Load awal map
+            case "MAP" -> parseMap(data); // Load awal map
 
             // ================= LOBBY & SYSTEM =================
 
@@ -178,38 +189,39 @@ public class PacketParser {
                 try {
                     gameState.setMyPlayerId(Integer.parseInt(data));
                     Platform.runLater(() -> SceneManager.toRoom(App.pendingRoomName));
-                } catch (Exception e) {}
+                } catch (Exception e) {
+                }
             }
             case "GAME_STARTED" -> Platform.runLater(App::startGame);
-            
+
             case "ERROR" -> Platform.runLater(() -> {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setContentText(data);
                 alert.showAndWait();
             });
-            
+
             case "ROOM_UPDATE" -> parseRoomUpdate(data);
             case "ROOM_LIST" -> parseRoomList(data);
-            
+
             case "REMATCH_UPDATE" -> {
                 // Server: REMATCH_UPDATE;votes;total
                 try {
                     String[] info = data.split(";");
                     int current = Integer.parseInt(info[0]);
                     int total = Integer.parseInt(info[1]);
-                    
+
                     // Update UI via SceneManager
                     SceneManager.updateRematchCount(current, total);
-                    
+
                 } catch (Exception e) {
                     System.err.println("Error parsing REMATCH_UPDATE");
                 }
             }
-            
+
             // --- FIX STATE ROOM LAMA ---
             case "RESET_GAME_STATE" -> {
                 System.out.println("[CLIENT] Resetting Game State (New Room Join)...");
-                gameState.clearBombs(); 
+                gameState.clearBombs();
                 gameState.clearItems();
                 gameState.clearExplosions();
                 gameState.clearPlayers();
@@ -218,55 +230,68 @@ public class PacketParser {
         }
     }
 
-    private void parseState(String data) {
+private void parseState(String data) {
+        // [FIX PENTING] 
+        // Jika status di client sudah Game Over (karena menerima paket GAME_OVER sebelumnya),
+        // abaikan paket STATE yang baru masuk agar player tidak muncul lagi (jadi hantu).
+
         String cleanData = data.replace("|||", "");
         String[] parts = cleanData.split(";", 2);
-        
+
         // Parse Waktu
         if (parts.length >= 1) {
             try {
                 gameState.setGameTime(Double.parseDouble(parts[0]));
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
         }
-        
+
         // Parse Players
-        if (parts.length >= 2) parsePlayers(parts[1]);
-        else gameState.clearPlayers();
+        if (parts.length >= 2)
+            parsePlayers(parts[1]);
+        else
+            gameState.clearPlayers();
     }
 
     private void parsePlayers(String section) {
-        if (section.isEmpty() || section.equals("NP")) { 
-            gameState.clearPlayers(); 
-            return; 
+        if (section.isEmpty() || section.equals("NP")) {
+            gameState.clearPlayers();
+            return;
         }
 
         List<VisualPlayer> currentPlayers = gameState.getPlayers();
         List<VisualPlayer> nextFramePlayers = new ArrayList<>();
-        
+
         String[] playersData = section.split("#");
         for (String pStr : playersData) {
             try {
                 String[] pVal = pStr.split(",");
-                int id = Integer.parseInt(pVal[0]); 
+                int id = Integer.parseInt(pVal[0]);
                 double x = Double.parseDouble(pVal[1]);
                 double y = Double.parseDouble(pVal[2]);
-                String stateStr = pVal[3]; 
-                String dirStr = pVal[4];   
-                
+                String stateStr = pVal[3];
+                String dirStr = pVal[4];
+
                 VisualPlayer targetPlayer = null;
                 for (VisualPlayer existing : currentPlayers) {
-                    if (existing.id == id) { targetPlayer = existing; break; }
+                    if (existing.id == id) {
+                        targetPlayer = existing;
+                        break;
+                    }
                 }
 
                 if (targetPlayer != null) {
-                    targetPlayer.setNetworkState(x, y, VisualPlayer.State.valueOf(stateStr), VisualPlayer.Direction.valueOf(dirStr));
+                    targetPlayer.setNetworkState(x, y, VisualPlayer.State.valueOf(stateStr),
+                            VisualPlayer.Direction.valueOf(dirStr));
                 } else {
                     targetPlayer = new VisualPlayer(id, spriteLoader);
-                    targetPlayer.setNetworkState(x, y, VisualPlayer.State.valueOf(stateStr), VisualPlayer.Direction.valueOf(dirStr));
+                    targetPlayer.setNetworkState(x, y, VisualPlayer.State.valueOf(stateStr),
+                            VisualPlayer.Direction.valueOf(dirStr));
                 }
                 nextFramePlayers.add(targetPlayer);
 
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
         }
         gameState.updatePlayers(nextFramePlayers);
     }
@@ -279,11 +304,13 @@ public class PacketParser {
             String[] tiles = tokens[2].split(",");
             int[][] map = new int[rows][cols];
             for (int i = 0; i < tiles.length; i++) {
-                int x = i % rows; int y = i / rows;
+                int x = i % rows;
+                int y = i / rows;
                 map[x][y] = Integer.parseInt(tiles[i]);
             }
             gameState.setMap(map);
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
     }
 
     private void parseRoomUpdate(String data) {
@@ -292,15 +319,20 @@ public class PacketParser {
             int hostId = Integer.parseInt(section[0]);
             String[] idsStr = section[1].split(",");
             List<Integer> ids = new ArrayList<>();
-            for(String s : idsStr) if(!s.trim().isEmpty()) ids.add(Integer.parseInt(s.trim()));
+            for (String s : idsStr)
+                if (!s.trim().isEmpty())
+                    ids.add(Integer.parseInt(s.trim()));
             gameState.updateRoomPlayers(hostId, ids);
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
     }
 
     private void parseRoomList(String data) {
         String[] raw = data.split(",");
         List<String> rooms = new ArrayList<>();
-        for (String r : raw) if (!r.trim().isEmpty()) rooms.add(r.trim());
+        for (String r : raw)
+            if (!r.trim().isEmpty())
+                rooms.add(r.trim());
         gameState.updateRooms(rooms);
     }
 }
