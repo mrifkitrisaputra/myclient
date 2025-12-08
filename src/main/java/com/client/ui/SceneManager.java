@@ -8,14 +8,19 @@ import com.client.App;
 import com.client.network.InputSender;
 import com.client.render.GameCanvas;
 
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
 public class SceneManager {
+    private static GameOverPopup currentPopup;
     private static Stage stage;
     private static final Set<KeyCode> pressedKeys = new HashSet<>();
+    
+    // Simpan root agar bisa diakses untuk menambah Popup Game Over nanti
+    private static StackPane gameRoot; 
 
     public static void setStage(Stage s) { stage = s; }
 
@@ -38,17 +43,17 @@ public class SceneManager {
     }
 
     public static void toGame(GameCanvas canvas, InputSender inputSender, String roomName) {
-        // 1. Setup Root dengan StackPane (Canvas di layer bawah)
-        StackPane root = new StackPane(canvas);
-        Scene gameScene = new Scene(root);
+        // 1. Setup Root Global
+        gameRoot = new StackPane(canvas);
+        Scene gameScene = new Scene(gameRoot);
         
         pressedKeys.clear();
 
-        // 2. Setup PauseMenu (Awalnya tidak ditambahkan ke root/hidden)
+        // 2. Setup PauseMenu (Awalnya tidak ditambahkan/hidden)
         PauseMenu pauseMenu = new PauseMenu(
             () -> { 
                 // Aksi Resume: Hapus menu, kembalikan fokus ke game
-                root.getChildren().remove(root.getChildren().size() - 1); 
+                gameRoot.getChildren().remove(gameRoot.getChildren().size() - 1); 
                 canvas.requestFocus();
             },
             () -> App.leaveGame() // Aksi Leave: Panggil logic di App
@@ -58,16 +63,16 @@ public class SceneManager {
             KeyCode code = e.getCode();
             
             // Cek apakah Menu sedang terbuka
-            boolean isMenuOpen = root.getChildren().contains(pauseMenu);
+            boolean isMenuOpen = gameRoot.getChildren().contains(pauseMenu);
 
             // --- LOGIC ESCAPE (PAUSE) ---
             if (code == KeyCode.ESCAPE) {
                 if (isMenuOpen) {
                     // Resume Game
-                    root.getChildren().remove(pauseMenu);
+                    gameRoot.getChildren().remove(pauseMenu);
                 } else {
                     // Pause Game
-                    root.getChildren().add(pauseMenu);
+                    gameRoot.getChildren().add(pauseMenu);
                     // PENTING: Hentikan semua pergerakan saat menu dibuka
                     resetMovement(inputSender); 
                     pressedKeys.clear();
@@ -97,9 +102,9 @@ public class SceneManager {
 
         gameScene.setOnKeyReleased(e -> {
             KeyCode code = e.getCode();
-            boolean isMenuOpen = root.getChildren().contains(pauseMenu);
+            boolean isMenuOpen = gameRoot.getChildren().contains(pauseMenu);
             
-            // Jika Menu Buka, abaikan release (karena input sudah di-reset saat ESC ditekan)
+            // Jika Menu Buka, abaikan release
             if (isMenuOpen) return;
 
             pressedKeys.remove(code);
@@ -115,6 +120,26 @@ public class SceneManager {
         canvas.requestFocus(); 
         stage.setMaximized(true);
     }
+
+    // --- METHOD BARU: Menampilkan Popup Game Over ---
+    public static void showGameOverPopup(boolean isWin) {
+        if (gameRoot == null) return;
+
+        // Pastikan dijalankan di UI Thread
+        Platform.runLater(() -> {
+            if (currentPopup != null) gameRoot.getChildren().remove(currentPopup);
+            
+            currentPopup = new GameOverPopup(isWin);
+        gameRoot.getChildren().add(currentPopup);
+        pressedKeys.clear();
+        });
+    }
+
+    public static void updateRematchCount(int votes, int total) {
+    if (currentPopup != null) {
+        currentPopup.updateVoteText(votes, total);
+    }
+}
 
     private static void handleInput(KeyCode code, boolean isPressed, InputSender sender) {
         String keyCommand = null;
@@ -133,7 +158,7 @@ public class SceneManager {
         }
     }
 
-    // Helper untuk menghentikan paksa karakter saat menu dibuka
+    // Helper untuk menghentikan paksa karakter
     private static void resetMovement(InputSender sender) {
         sender.sendInput("UP", false);
         sender.sendInput("DOWN", false);

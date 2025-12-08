@@ -107,6 +107,46 @@ public class PacketParser {
                 } catch (Exception e) {}
             }
 
+            // ================= DEATH & GAME OVER =================
+
+            case "PLAYER_DIED" -> {
+                // Server kirim: PLAYER_DIED;id
+                try {
+                    int deadId = Integer.parseInt(data);
+                    
+                    // Cek apakah ID yang mati adalah ID saya sendiri
+                    if (deadId == gameState.getMyPlayerId()) {
+                        System.out.println("[CLIENT] You Died!");
+                        // Munculkan Popup Kalah (false) di Thread JavaFX
+                        Platform.runLater(() -> SceneManager.showGameOverPopup(false));
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error parsing PLAYER_DIED");
+                }
+            }
+
+            case "GAME_OVER" -> {
+                // Server kirim: GAME_OVER;WINNER_ID  atau  GAME_OVER;TIME_UP
+                String result = data;
+                boolean isWin = false;
+                
+                if (!result.equals("TIME_UP")) {
+                    try {
+                        int winnerId = Integer.parseInt(result);
+                        // Cek apakah saya pemenangnya
+                        isWin = (winnerId == gameState.getMyPlayerId());
+                    } catch (NumberFormatException e) {
+                        System.err.println("Error parsing Winner ID");
+                    }
+                }
+                
+                System.out.println("[CLIENT] Game Over. Win? " + isWin);
+                
+                final boolean winStatus = isWin;
+                // Munculkan Popup Menang/Kalah di Thread JavaFX
+                Platform.runLater(() -> SceneManager.showGameOverPopup(winStatus));
+            }
+
             // ================= STATE & SYNC =================
 
             case "STATE" -> parseState(data); // Posisi Player & Waktu
@@ -121,7 +161,7 @@ public class PacketParser {
                 } catch (Exception e) {}
             }
             case "GAME_STARTED" -> Platform.runLater(App::startGame);
-            case "GAME_OVER" -> System.out.println("GAME OVER: " + data);
+            
             case "ERROR" -> Platform.runLater(() -> {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setContentText(data);
@@ -129,6 +169,20 @@ public class PacketParser {
             });
             case "ROOM_UPDATE" -> parseRoomUpdate(data);
             case "ROOM_LIST" -> parseRoomList(data);
+            case "REMATCH_UPDATE" -> {
+    // Server kirim: REMATCH_UPDATE;votes;total
+    try {
+        String[] info = data.split(";");
+        int current = Integer.parseInt(info[0]);
+        int total = Integer.parseInt(info[1]);
+        
+        // Update UI via SceneManager
+        SceneManager.updateRematchCount(current, total);
+        
+    } catch (Exception e) {
+        System.err.println("Error parsing REMATCH_UPDATE");
+    }
+}
         }
     }
 
