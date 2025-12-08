@@ -142,7 +142,19 @@ public class GameRenderer {
 
         g.setFill(Color.WHITE);
         g.setFont(new Font("Consolas", 30));
-        g.fillText("Time: " + (int)gameState.getGameTime(), 20, 40);
+        // --- [UPDATE] FORMAT WAKTU (MM:SS) ---
+        double totalSeconds = gameState.getGameTime();
+        
+        // Pastikan tidak negatif
+        if (totalSeconds < 0) totalSeconds = 0; 
+
+        int minutes = (int) (totalSeconds / 60);
+        int seconds = (int) (totalSeconds % 60);
+
+        // Format string sesuai request: "00:00"
+        String timeStr = String.format("%02d:%02d", minutes, seconds);
+        
+        g.fillText("Time: " + timeStr, 20, 40);
         
         // Info Debug di pojok kanan atas
         if (gameState.isDebugMode()) {

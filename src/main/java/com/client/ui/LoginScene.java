@@ -3,6 +3,7 @@ package com.client.ui;
 import java.util.function.Consumer;
 
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -10,6 +11,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Screen;
 
 public class LoginScene {
     private final Scene scene;
@@ -42,7 +44,8 @@ public class LoginScene {
         });
 
         root.getChildren().addAll(title, ipField, btnConnect);
-        this.scene = new Scene(root, 640, 480);
+        Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+        this.scene = new Scene(root, screenBounds.getWidth(), screenBounds.getHeight());
     }
 
     public Scene getScene() {

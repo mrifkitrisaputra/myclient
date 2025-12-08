@@ -5,7 +5,7 @@ import java.util.List;
 
 import com.client.App;
 import com.client.ClientGameState;
-import com.client.entities.VisualPlayer; // Pastikan import ini ada
+import com.client.entities.VisualPlayer; 
 import com.client.render.SpriteLoader;
 import com.client.ui.SceneManager; 
 
@@ -25,6 +25,7 @@ public class PacketParser {
     public void parse(String packet) {
         if (packet == null || packet.isEmpty()) return;
 
+        // Split Command dan Sisa Data
         String[] parts = packet.split(";", 2);
         String command = parts[0];
         String data = parts.length > 1 ? parts[1] : "";
@@ -34,6 +35,7 @@ public class PacketParser {
                 try {
                     gameState.setMyPlayerId(Integer.parseInt(data));
                     Platform.runLater(() -> {
+                        // Pastikan pendingRoomName ada isinya di App
                         SceneManager.toRoom(App.pendingRoomName);
                     });
                 } catch (Exception e) {}
@@ -49,6 +51,12 @@ public class PacketParser {
                     alert.showAndWait();
                 });
             }
+            
+            case "GAME_OVER" -> {
+                 // Handle Game Over (Menang/Kalah)
+                 // data bisa berisi "TIME_UP" atau info lain
+                 System.out.println("GAME OVER: " + data);
+            }
 
             case "ROOM_UPDATE" -> parseRoomUpdate(data);
             case "ROOM_LIST" -> parseRoomList(data);
@@ -57,6 +65,78 @@ public class PacketParser {
             case "STATE" -> parseState(data);
         }
     }
+
+    // [UPDATE PENTING] Parse State sekarang menangani WAKTU
+    private void parseState(String data) {
+        // Format dari Server: "Waktu;P1#P2#P3...|||"
+        
+        // 1. Bersihkan penanda akhir paket
+        String cleanData = data.replace("|||", "");
+
+        // 2. Pisahkan WAKTU dan DATA PLAYER
+        // limit 2 berarti split jadi [Waktu, SisaString]
+        String[] parts = cleanData.split(";", 2);
+
+        // Parse Waktu (Bagian pertama)
+        if (parts.length >= 1) {
+            try {
+                double time = Double.parseDouble(parts[0]);
+                gameState.setGameTime(time); // Pastikan method ini ada di ClientGameState
+            } catch (NumberFormatException e) {}
+        }
+
+        // Parse Player (Bagian kedua, jika ada)
+        if (parts.length >= 2) {
+            parsePlayers(parts[1]);
+        } else {
+            // Kalau tidak ada data player (misal kosong), clear players
+            gameState.clearPlayers();
+        }
+    }
+
+    private void parsePlayers(String section) {
+        if (section.isEmpty() || section.equals("NP")) { 
+            gameState.clearPlayers(); 
+            return;
+        }
+
+        List<VisualPlayer> currentPlayers = gameState.getPlayers();
+        List<VisualPlayer> nextFramePlayers = new ArrayList<>();
+        
+        String[] playersData = section.split("#");
+        for (String pStr : playersData) {
+            try {
+                String[] pVal = pStr.split(",");
+                int id = Integer.parseInt(pVal[0]); 
+                double x = Double.parseDouble(pVal[1]);
+                double y = Double.parseDouble(pVal[2]);
+                String stateStr = pVal[3]; 
+                String dirStr = pVal[4];   
+                
+                VisualPlayer targetPlayer = null;
+                for (VisualPlayer existing : currentPlayers) {
+                    if (existing.id == id) {
+                        targetPlayer = existing; 
+                        break;
+                    }
+                }
+
+                if (targetPlayer != null) {
+                    targetPlayer.setNetworkState(x, y, VisualPlayer.State.valueOf(stateStr), VisualPlayer.Direction.valueOf(dirStr));
+                } else {
+                    targetPlayer = new VisualPlayer(id, spriteLoader);
+                    targetPlayer.setNetworkState(x, y, VisualPlayer.State.valueOf(stateStr), VisualPlayer.Direction.valueOf(dirStr));
+                }
+
+                nextFramePlayers.add(targetPlayer);
+
+            } catch (Exception e) {}
+        }
+        
+        gameState.updatePlayers(nextFramePlayers);
+    }
+
+    // --- Method Parsing Lain Tetap Sama ---
 
     private void parseRoomUpdate(String data) {
         try {
@@ -93,62 +173,5 @@ public class PacketParser {
             }
             gameState.setMap(map);
         } catch (Exception e) {}
-    }
-
-    private void parseState(String data) {
-        String[] sections = data.split("\\|", -1);
-        if (sections.length >= 1) parsePlayers(sections[0]);
-    }
-
-    // --- BAGIAN UTAMA YANG DIPERBAIKI ---
-    private void parsePlayers(String section) {
-        if (section.isEmpty() || section.equals("NP")) { 
-            gameState.clearPlayers(); 
-            return;
-        }
-
-        // 1. Ambil daftar player yang SAAT INI ada di game
-        List<VisualPlayer> currentPlayers = gameState.getPlayers();
-        
-        // 2. Siapkan list untuk frame berikutnya
-        List<VisualPlayer> nextFramePlayers = new ArrayList<>();
-        
-        String[] playersData = section.split("#");
-        for (String pStr : playersData) {
-            try {
-                String[] pVal = pStr.split(",");
-                int id = Integer.parseInt(pVal[0]); 
-                double x = Double.parseDouble(pVal[1]);
-                double y = Double.parseDouble(pVal[2]);
-                String stateStr = pVal[3]; 
-                String dirStr = pVal[4];   
-                
-                // 3. CARI: Apakah Player ID ini sudah ada di memori?
-                VisualPlayer targetPlayer = null;
-                for (VisualPlayer existing : currentPlayers) {
-                    if (existing.id == id) {
-                        targetPlayer = existing; // Ketemu! Pakai object lama
-                        break;
-                    }
-                }
-
-                if (targetPlayer != null) {
-                    // UPDATE: Object lama di-update datanya (Timer animasi jalan terus)
-                    targetPlayer.setNetworkState(x, y, VisualPlayer.State.valueOf(stateStr), VisualPlayer.Direction.valueOf(dirStr));
-                } else {
-                    // CREATE: Belum ada, bikin baru (Hanya terjadi 1x saat connect)
-                    targetPlayer = new VisualPlayer(id, spriteLoader);
-                    targetPlayer.setNetworkState(x, y, VisualPlayer.State.valueOf(stateStr), VisualPlayer.Direction.valueOf(dirStr));
-                }
-
-                // Masukkan ke list frame berikutnya
-                nextFramePlayers.add(targetPlayer);
-
-            } catch (Exception e) {}
-        }
-        
-        // 4. Update GameState dengan list yang berisi Object LAMA (yang sudah diupdate)
-        // Jadi timer animasi di dalam object tersebut tidak ter-reset.
-        gameState.updatePlayers(nextFramePlayers);
     }
 }

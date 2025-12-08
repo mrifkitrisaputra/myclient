@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1764834175809,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1765159897118,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,15 +2,17 @@\n \r\n import java.util.function.Consumer;\r\n \r\n import javafx.geometry.Pos;\r\n+import javafx.geometry.Rectangle2D;\r\n import javafx.scene.Scene;\r\n import javafx.scene.control.Button;\r\n import javafx.scene.control.Label;\r\n import javafx.scene.control.TextField;\r\n import javafx.scene.layout.VBox;\r\n import javafx.scene.text.Font;\r\n import javafx.scene.text.FontWeight;\r\n+import javafx.stage.Screen;\r\n \r\n public class LoginScene {\r\n     private final Scene scene;\r\n \r\n@@ -41,9 +43,10 @@\n             }\r\n         });\r\n \r\n         root.getChildren().addAll(title, ipField, btnConnect);\r\n-        this.scene = new Scene(root, 640, 480);\r\n+        Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();\r\n+        this.scene = new Scene(root, screenBounds.getWidth(), screenBounds.getHeight());\r\n     }\r\n \r\n     public Scene getScene() {\r\n         return scene;\r\n"
                 }
             ],
             "date": 1764834175809,

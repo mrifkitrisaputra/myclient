@@ -15,7 +15,7 @@ public class ClientGameState {
     // ... (Kode variabel lama tetap sama) ...
     private int[][] map;
     private boolean gameOver = false;
-    private float gameTime = 0;
+    private double gameTime = 0;
     
     // --- TAMBAHAN BARU: DEBUG MODE ---
     private boolean debugMode = false; // Default mati
@@ -86,6 +86,14 @@ public class ClientGameState {
     public List<VisualBomb> getBombs() { return bombs; }
     public List<VisualExplosion> getExplosions() { return explosions; }
     public List<VisualItem> getItems() { return items; }
-    public float getGameTime() { return gameTime; }
+    
+    public void setGameTime(double time) {
+        this.gameTime = time;
+    }
+
+    public double getGameTime() {
+        return gameTime;
+    }
+    
     public boolean isGameOver() { return gameOver; }
 }
