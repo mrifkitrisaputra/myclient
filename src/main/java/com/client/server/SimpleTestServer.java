@@ -55,6 +55,10 @@ public class SimpleTestServer {
         boolean gameStarted = false;
         boolean isRunning = true;
 
+        // [UPDATE TIME] Variabel Timer
+        private double gameTime = 60.0; // 3 Menit (180 detik)
+        private boolean isGameOver = false;
+
         List<PlayerState> players = new CopyOnWriteArrayList<>();
         List<ClientHandler> clients = new CopyOnWriteArrayList<>();
         ClientHandler host;
@@ -115,15 +119,32 @@ public class SimpleTestServer {
 
         @Override
         public void run() {
+            // [UPDATE TIME] Untuk menghitung delta time (dt)
+            long lastTime = System.nanoTime();
+
             while (isRunning) {
                 try {
-                    Thread.sleep(16); 
+                    // [UPDATE TIME] Hitung waktu yang berlalu sejak frame terakhir
+                    long now = System.nanoTime();
+                    double dt = (now - lastTime) / 1_000_000_000.0; // Konversi ke detik
+                    lastTime = now;
+
+                    Thread.sleep(16); // ~60 FPS cap
                     
-                    if (!gameStarted || clients.isEmpty() || collisionHandler == null) continue;
+                    if (!gameStarted || clients.isEmpty() || collisionHandler == null || isGameOver) continue;
                     
+                    // --- [UPDATE TIME] LOGIC TIMER ---
+                    gameTime -= dt;
+                    if (gameTime <= 0) {
+                        gameTime = 0;
+                        isGameOver = true;
+                        broadcast("GAME_OVER;TIME_UP"); // Kirim sinyal kalah waktu
+                        System.out.println("[ROOM " + name + "] Time is up!");
+                    }
+
                     // --- PHYSICS UPDATE ---
                     for (PlayerState p : players) {
-                        double speed = 3.0; 
+                        double speed = 3.0; // pixel per frame (bisa diubah jadi pixel per second * dt kalau mau lebih halus)
                         
                         double nextX = p.x;
                         double nextY = p.y;
@@ -133,8 +154,7 @@ public class SimpleTestServer {
                         if (p.up)    nextY -= speed;
                         if (p.down)  nextY += speed;
                         
-                        // [UPDATE 1] Cek collision MAP dan PLAYER secara terpisah untuk X dan Y
-                        // Cek sumbu X
+                        // Cek collision MAP dan PLAYER secara terpisah
                         boolean collideMapX = collisionHandler.checkCollision(nextX, p.y);
                         boolean collidePlayerX = collisionHandler.checkPlayerCollision(nextX, p.y, p, players);
                         
@@ -142,7 +162,6 @@ public class SimpleTestServer {
                             p.x = nextX;
                         }
 
-                        // Cek sumbu Y
                         boolean collideMapY = collisionHandler.checkCollision(p.x, nextY);
                         boolean collidePlayerY = collisionHandler.checkPlayerCollision(p.x, nextY, p, players);
 
@@ -153,8 +172,13 @@ public class SimpleTestServer {
                         p.updateAnimLogic();
                     }
 
-                    // --- BROADCAST STATE ---
+                    // --- BROADCAST STATE (DENGAN WAKTU) ---
+                    // Format Baru: STATE;WaktuTersisa;P1#P2#P3...|||
                     StringBuilder sb = new StringBuilder("STATE;");
+                    
+                    // [UPDATE TIME] Masukkan waktu ke paket (dikirim sebagai int biar hemat)
+                    sb.append((int)Math.ceil(gameTime)).append(";");
+
                     for (int i = 0; i < players.size(); i++) {
                         PlayerState p = players.get(i);
                         sb.append(p.id).append(",")
@@ -186,7 +210,6 @@ public class SimpleTestServer {
     }
 
     // ===================== CLIENT HANDLER =======================
-    // (Tidak ada perubahan di Class ClientHandler, disederhanakan untuk jawaban)
     static class ClientHandler implements Runnable {
         private Socket socket;
         private PrintWriter out;
@@ -332,7 +355,6 @@ public class SimpleTestServer {
             return isSolid(left, top) || isSolid(right, top) || isSolid(left, bottom) || isSolid(right, bottom);
         }
         
-        // [UPDATE 2] Method baru untuk mengecek tabrakan antar player
         public boolean checkPlayerCollision(double newX, double newY, PlayerState self, List<PlayerState> allPlayers) {
             double selfL = newX + offset;
             double selfT = newY + offset;
@@ -340,7 +362,6 @@ public class SimpleTestServer {
             double selfB = selfT + hitboxSize;
 
             for (PlayerState other : allPlayers) {
-                // Jangan cek tabrakan dengan diri sendiri
                 if (other == self) continue; 
 
                 double otherL = other.x + offset;
@@ -348,10 +369,8 @@ public class SimpleTestServer {
                 double otherR = otherL + hitboxSize;
                 double otherB = otherT + hitboxSize;
 
-                // Logic Intersection Rectangle (AABB)
-                // Jika "Kotak Saya" tumpang tindih dengan "Kotak Orang Lain"
                 if (selfL < otherR && selfR > otherL && selfT < otherB && selfB > otherT) {
-                    return true; // Tabrakan!
+                    return true; 
                 }
             }
             return false;
@@ -366,7 +385,7 @@ public class SimpleTestServer {
         }
     }
 
-    // ===================== MAP GENERATOR (SAMA SEPERTI SEBELUMNYA) =======================
+    // ===================== MAP GENERATOR =======================
     static class MapGenerator {
         public static int[][] generateMapArray(int w, int h) {
             int[][] map = new int[w][h];
@@ -412,7 +431,6 @@ public class SimpleTestServer {
         
         public void updateAnimLogic() {
             boolean isMoving = up || down || left || right;
-            String oldState = currentState; 
             
             if (isMoving) {
                 currentState = "WALK";
@@ -423,10 +441,6 @@ public class SimpleTestServer {
                 else if (right)currentDir = "RIGHT";
             } else {
                 currentState = "IDLE";
-            }
-
-            if (!currentState.equals(oldState)) {
-                // Debug log
             }
         }
     }
