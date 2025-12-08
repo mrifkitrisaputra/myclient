@@ -34,14 +34,13 @@ public class PacketParser {
             // ================= GAMEPLAY EVENTS =================
 
             case "BOMB_PLACED" -> {
-                // Server kirim: BOMB_PLACED;x,y;ownerId
+                // Server: BOMB_PLACED;x,y;ownerId
                 try {
                     String[] info = data.split(";");
                     String[] coords = info[0].split(",");
                     int bx = Integer.parseInt(coords[0]);
                     int by = Integer.parseInt(coords[1]);
                     
-                    // Masukkan ke State agar dirender
                     gameState.addBomb(bx, by);
                     System.out.println("[CLIENT] Bomb spawned at " + bx + "," + by);
                 } catch (Exception e) {
@@ -50,7 +49,7 @@ public class PacketParser {
             }
 
             case "EXPLOSION" -> {
-                // Server kirim: EXPLOSION;centerX,centerY;part1;part2...
+                // Server: EXPLOSION;centerX,centerY;part1;part2...
                 try {
                     String[] sections = data.split(";");
                     
@@ -76,7 +75,7 @@ public class PacketParser {
             }
 
             case "BREAK_TILE" -> {
-                // Server kirim: BREAK_TILE;x,y
+                // Server: BREAK_TILE;x,y
                 try {
                     String[] coords = data.split(",");
                     int tx = Integer.parseInt(coords[0]);
@@ -86,7 +85,7 @@ public class PacketParser {
             }
 
             case "SPAWN_ITEM" -> {
-                // Server kirim: SPAWN_ITEM;x,y,TYPE
+                // Server: SPAWN_ITEM;x,y,TYPE
                 try {
                     String[] info = data.split(",");
                     int ix = Integer.parseInt(info[0]);
@@ -97,10 +96,10 @@ public class PacketParser {
             }
 
             case "ITEM_PICKED" -> {
-                // Server kirim: ITEM_PICKED;pid,x,y,TYPE
+                // Server: ITEM_PICKED;pid,x,y,TYPE
                 try {
                     String[] info = data.split(",");
-                    // info[0] adalah playerID, kita butuh koordinat utk hapus visual
+                    // info[0] adalah playerID
                     int ix = Integer.parseInt(info[1]);
                     int iy = Integer.parseInt(info[2]);
                     gameState.removeItemAt(ix, iy);
@@ -110,14 +109,13 @@ public class PacketParser {
             // ================= DEATH & GAME OVER =================
 
             case "PLAYER_DIED" -> {
-                // Server kirim: PLAYER_DIED;id
+                // Server: PLAYER_DIED;id
                 try {
                     int deadId = Integer.parseInt(data);
                     
                     // Cek apakah ID yang mati adalah ID saya sendiri
                     if (deadId == gameState.getMyPlayerId()) {
                         System.out.println("[CLIENT] You Died!");
-                        // Munculkan Popup Kalah (false) di Thread JavaFX
                         Platform.runLater(() -> SceneManager.showGameOverPopup(false));
                     }
                 } catch (Exception e) {
@@ -126,24 +124,46 @@ public class PacketParser {
             }
 
             case "GAME_OVER" -> {
-                // Server kirim: GAME_OVER;WINNER_ID  atau  GAME_OVER;TIME_UP
-                String result = data;
+                // Format:
+                // 1. GAME_OVER;WINNER;[id]
+                // 2. GAME_OVER;SURVIVORS;[id1,id2,...]
+                // 3. GAME_OVER;DRAW
+                // 4. GAME_OVER;TIME_UP (Legacy -> Draw)
+
+                String[] gParts = data.split(";", 2);
+                String type = gParts[0];
                 boolean isWin = false;
-                
-                if (!result.equals("TIME_UP")) {
-                    try {
-                        int winnerId = Integer.parseInt(result);
-                        // Cek apakah saya pemenangnya
-                        isWin = (winnerId == gameState.getMyPlayerId());
-                    } catch (NumberFormatException e) {
-                        System.err.println("Error parsing Winner ID");
+
+                try {
+                    int myId = gameState.getMyPlayerId();
+
+                    if (type.equals("WINNER")) {
+                        // Menang sendirian (Last Man Standing)
+                        int winnerId = Integer.parseInt(gParts[1]);
+                        isWin = (winnerId == myId);
+                        
+                    } else if (type.equals("SURVIVORS")) {
+                        // Menang rame-rame (Time Up Survival)
+                        String[] survivorIds = gParts[1].split(",");
+                        for (String idStr : survivorIds) {
+                            if (Integer.parseInt(idStr) == myId) {
+                                isWin = true; // Hore, ID saya ada di daftar survivor!
+                                break;
+                            }
+                        }
+                        
+                    } else if (type.equals("DRAW") || type.equals("TIME_UP")) {
+                        // Tidak ada yang menang
+                        isWin = false;
                     }
+                    
+                } catch (Exception e) {
+                    System.err.println("Error parsing GAME_OVER: " + e.getMessage());
                 }
-                
-                System.out.println("[CLIENT] Game Over. Win? " + isWin);
-                
+
                 final boolean winStatus = isWin;
-                // Munculkan Popup Menang/Kalah di Thread JavaFX
+                System.out.println("[CLIENT] Game Over. You Win? " + winStatus);
+                
                 Platform.runLater(() -> SceneManager.showGameOverPopup(winStatus));
             }
 
@@ -167,30 +187,34 @@ public class PacketParser {
                 alert.setContentText(data);
                 alert.showAndWait();
             });
+            
             case "ROOM_UPDATE" -> parseRoomUpdate(data);
             case "ROOM_LIST" -> parseRoomList(data);
+            
             case "REMATCH_UPDATE" -> {
-    // Server kirim: REMATCH_UPDATE;votes;total
-    try {
-        String[] info = data.split(";");
-        int current = Integer.parseInt(info[0]);
-        int total = Integer.parseInt(info[1]);
-        
-        // Update UI via SceneManager
-        SceneManager.updateRematchCount(current, total);
-        
-    } catch (Exception e) {
-        System.err.println("Error parsing REMATCH_UPDATE");
-    }
-}
-        case "RESET_GAME_STATE" -> {
-    System.out.println("Cleaning up local game state...");
-    // Pastikan list bomb, item, dan explosion di-clear
-    gameState.clearBombs(); 
-    gameState.clearItems();
-    gameState.clearExplosions();
-    gameState.clearPlayers();
-}
+                // Server: REMATCH_UPDATE;votes;total
+                try {
+                    String[] info = data.split(";");
+                    int current = Integer.parseInt(info[0]);
+                    int total = Integer.parseInt(info[1]);
+                    
+                    // Update UI via SceneManager
+                    SceneManager.updateRematchCount(current, total);
+                    
+                } catch (Exception e) {
+                    System.err.println("Error parsing REMATCH_UPDATE");
+                }
+            }
+            
+            // --- FIX STATE ROOM LAMA ---
+            case "RESET_GAME_STATE" -> {
+                System.out.println("[CLIENT] Resetting Game State (New Room Join)...");
+                gameState.clearBombs(); 
+                gameState.clearItems();
+                gameState.clearExplosions();
+                gameState.clearPlayers();
+                gameState.setGameOver(false);
+            }
         }
     }
 
