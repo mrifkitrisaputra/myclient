@@ -30,7 +30,10 @@
         private final List<VisualItem> items = new CopyOnWriteArrayList<>();
         private final List<String> availableRooms = new ArrayList<>();
         private Consumer<List<String>> onRoomListUpdate; 
-        private Consumer<Void> onRoomStateUpdate; 
+        private Consumer<Void> onRoomStateUpdate;
+        private String shrinkPattern = "";
+    private int shrinkLeft, shrinkRight, shrinkTop, shrinkBottom;
+    private double shrinkTimer = 0; // Timer untuk durasi efek visual
 
         // --- METHODS DEBUG BARU ---
         public boolean isDebugMode() { return debugMode; }
@@ -44,6 +47,13 @@
             
             // Update Ledakan
             for (VisualExplosion e : explosions) e.update(dt);
+
+            if (shrinkTimer > 0) {
+            shrinkTimer -= dt;
+            if (shrinkTimer <= 0) {
+                shrinkPattern = ""; // Matikan efek jika waktu habis
+            }
+        }
             
             // [TAMBAHAN] Hapus ledakan yang animasinya sudah selesai dari list
             // Ini penting biar ledakan gak numpuk di memory dan layar
@@ -141,6 +151,13 @@
         public List<VisualBomb> getBombs() { return bombs; }
         public List<VisualExplosion> getExplosions() { return explosions; }
         public List<VisualItem> getItems() { return items; }
+        public boolean isShrinking() { return shrinkTimer > 0; }
+    public double getShrinkTimer() { return shrinkTimer; }
+    public String getShrinkPattern() { return shrinkPattern; }
+    public int getShrinkLeft() { return shrinkLeft; }
+    public int getShrinkRight() { return shrinkRight; }
+    public int getShrinkTop() { return shrinkTop; }
+    public int getShrinkBottom() { return shrinkBottom; }
         
         public void setGameTime(double time) {
             this.gameTime = time;
@@ -160,6 +177,15 @@
 
     public void clearItems() {
         items.clear();
+    }
+
+    public void setArenaWarning(String pattern, int l, int r, int t, int b) {
+        this.shrinkPattern = pattern;
+        this.shrinkLeft = l;
+        this.shrinkRight = r;
+        this.shrinkTop = t;
+        this.shrinkBottom = b;
+        this.shrinkTimer = 5.0; // Durasi warning 5 detik (Sesuai Server)
     }
         
         public boolean isGameOver() { return gameOver; }

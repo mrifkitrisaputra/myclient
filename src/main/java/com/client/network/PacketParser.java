@@ -220,13 +220,47 @@ public class PacketParser {
 
             // --- FIX STATE ROOM LAMA ---
             case "RESET_GAME_STATE" -> {
-                System.out.println("[CLIENT] Resetting Game State (New Room Join)...");
-                gameState.clearBombs();
-                gameState.clearItems();
-                gameState.clearExplosions();
-                gameState.clearPlayers();
-                gameState.setGameOver(false);
-            }
+    System.out.println("[CLIENT] Resetting Game State (Clean Up)...");
+    
+    // 1. Hapus semua entity visual
+    gameState.clearBombs();
+    gameState.clearItems();
+    gameState.clearExplosions();
+    gameState.clearPlayers();
+    
+    // 2. Reset status Game Over agar input & update jalan lagi
+    gameState.setGameOver(false); 
+    
+    // 3. (Opsional) Reset waktu visual ke default
+    gameState.setGameTime(40); 
+}
+
+            case "MAP_UPDATE" -> {
+    // Server: MAP_UPDATE;rows;cols;data
+    // Sama logicnya dengan MAP awal, bedanya ini update saat main
+    parseMap(data); 
+}
+case "ARENA_SHRINK_WARNING" -> {
+    // Tampilkan peringatan di layar (misal teks merah besar)
+    String pattern = data; 
+    System.out.println("[CLIENT] WARNING! ARENA SHRINKING: " + pattern);
+    // SceneManager.showWarning("ZONA BAHAYA! PINDAH KE TENGAH!");
+}
+case "ARENA_WARNING" -> {
+    // Server: ARENA_WARNING;LR;1;11;1;11
+    try {
+        String[] info = data.split(";");
+        String pattern = info[0];
+        int l = Integer.parseInt(info[1]);
+        int r = Integer.parseInt(info[2]);
+        int t = Integer.parseInt(info[3]);
+        int b = Integer.parseInt(info[4]);
+        
+        gameState.setArenaWarning(pattern, l, r, t, b);
+        System.out.println("[CLIENT] Arena Shrink Warning: " + pattern);
+    } catch (Exception e) {}
+}
+
         }
     }
 

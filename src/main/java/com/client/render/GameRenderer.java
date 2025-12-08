@@ -57,6 +57,8 @@ public class GameRenderer {
         // 2. Render Map (Lantai & Tembok)
         renderMap(g, map);
 
+        renderArenaShrink(g);
+
         // 3. Render Entities (Urutan Penting)
         // Item di bawah bom/player
         for (VisualItem item : gameState.getItems()) item.render(g);
@@ -148,6 +150,47 @@ public class GameRenderer {
             g.setFill(Color.YELLOW);
             g.setFont(new Font("Consolas", 14));
             g.fillText("[DEBUG ON]", canvas.getWidth() - 100, 30);
+        }
+    }
+
+    private void renderArenaShrink(GraphicsContext g) {
+        // Cek apakah ada warning aktif di state
+        if (!gameState.isShrinking()) return;
+
+        // Logic Denyut Jantung (Math.sin)
+        // Semakin timer mendekati 0, semakin cepat denyutnya (biar tegang)
+        double time = gameState.getShrinkTimer();
+        double speed = 10 + (5.0 - time) * 5; // Makin lama makin cepat
+        
+        // Alpha oscillate antara 0.2 sampai 0.6 (Merah Transparan)
+        double alpha = 0.2 + 0.4 * Math.abs(Math.sin(System.nanoTime() / 1e9 * speed));
+        
+        g.setFill(Color.rgb(255, 0, 0, alpha));
+
+        // Ambil koordinat grid dari GameState
+        int left = gameState.getShrinkLeft();
+        int right = gameState.getShrinkRight();
+        int top = gameState.getShrinkTop();
+        int bottom = gameState.getShrinkBottom();
+        String pattern = gameState.getShrinkPattern();
+        
+        // Ambil ukuran map total (untuk panjang baris/kolom)
+        // Kita bisa ambil dari map.length atau hitung manual 13x13
+        int mapW = gameState.getMap().length; 
+        int mapH = gameState.getMap()[0].length;
+
+        // Gambar Overlay Merah sesuai pola
+        if ("LR".equals(pattern)) {
+            // Kotak Kiri
+            g.fillRect(left * tile, 0, tile, mapH * tile);
+            // Kotak Kanan
+            g.fillRect(right * tile, 0, tile, mapH * tile);
+        } 
+        else if ("TB".equals(pattern)) {
+            // Kotak Atas
+            g.fillRect(0, top * tile, mapW * tile, tile);
+            // Kotak Bawah
+            g.fillRect(0, bottom * tile, mapW * tile, tile);
         }
     }
 }
