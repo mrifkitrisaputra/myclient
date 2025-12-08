@@ -5,6 +5,7 @@ import com.client.App;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
@@ -23,6 +24,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Screen;
 
 public class LobbyScene {
     private final Scene scene;
@@ -92,7 +94,8 @@ public class LobbyScene {
             }
         });
 
-        this.scene = new Scene(root, 800, 600);
+        Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+        this.scene = new Scene(root, screenBounds.getWidth(), screenBounds.getHeight());
     }
     
     private void showCreateRoomDialog() {

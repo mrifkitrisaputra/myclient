@@ -92,7 +92,7 @@ public class App extends Application {
         currentGameCanvas.start();
         
         // 4. Pindah Scene (Bawa Canvas & InputSender)
-        SceneManager.toGame(currentGameCanvas, inputSender);
+        SceneManager.toGame(currentGameCanvas, inputSender, pendingRoomName);
     }
 
     public static void leaveGame() {

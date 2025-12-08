@@ -37,7 +37,7 @@ public class SceneManager {
         stage.setTitle("Room: " + roomName);
     }
 
-    public static void toGame(GameCanvas canvas, InputSender inputSender) {
+    public static void toGame(GameCanvas canvas, InputSender inputSender, String roomName) {
         // 1. Setup Root dengan StackPane (Canvas di layer bawah)
         StackPane root = new StackPane(canvas);
         Scene gameScene = new Scene(root);
@@ -111,7 +111,7 @@ public class SceneManager {
         gameScene.heightProperty().addListener((obs, oldV, newV) -> canvas.setHeight(newV.doubleValue()));
 
         stage.setScene(gameScene);
-        stage.setTitle("Bomber Game - Playing");
+        stage.setTitle("Bomber Game [" + roomName + "] Playing");
         canvas.requestFocus(); 
         stage.setMaximized(true);
     }
