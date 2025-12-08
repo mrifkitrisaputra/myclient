@@ -38,7 +38,6 @@ public class SimpleTestServer {
         if (lobbyClients.isEmpty()) return;
         StringBuilder sb = new StringBuilder("ROOM_LIST;");
         for (Room r : rooms.values()) {
-            // [UPDATE 1] Hanya tampilkan room jika game BELUM dimulai
             if (!r.gameStarted) {
                 String type = r.isPrivate ? "(Private)" : "(Public)";
                 sb.append(r.name).append(":").append(type).append(",");
@@ -134,10 +133,23 @@ public class SimpleTestServer {
                         if (p.up)    nextY -= speed;
                         if (p.down)  nextY += speed;
                         
-                        if (!collisionHandler.checkCollision(nextX, p.y)) p.x = nextX;
-                        if (!collisionHandler.checkCollision(p.x, nextY)) p.y = nextY;
+                        // [UPDATE 1] Cek collision MAP dan PLAYER secara terpisah untuk X dan Y
+                        // Cek sumbu X
+                        boolean collideMapX = collisionHandler.checkCollision(nextX, p.y);
+                        boolean collidePlayerX = collisionHandler.checkPlayerCollision(nextX, p.y, p, players);
+                        
+                        if (!collideMapX && !collidePlayerX) {
+                            p.x = nextX;
+                        }
 
-                        // UPDATE ANIMASI DAN PRINT DEBUG JIKA BERUBAH
+                        // Cek sumbu Y
+                        boolean collideMapY = collisionHandler.checkCollision(p.x, nextY);
+                        boolean collidePlayerY = collisionHandler.checkPlayerCollision(p.x, nextY, p, players);
+
+                        if (!collideMapY && !collidePlayerY) {
+                            p.y = nextY;
+                        }
+
                         p.updateAnimLogic();
                     }
 
@@ -145,21 +157,15 @@ public class SimpleTestServer {
                     StringBuilder sb = new StringBuilder("STATE;");
                     for (int i = 0; i < players.size(); i++) {
                         PlayerState p = players.get(i);
-                        
-                        // Periksa apakah pesan yang disusun mengandung kata WALK
-                        // Ini memastikan server tidak mengirim hardcoded IDLE
                         sb.append(p.id).append(",")
                           .append((int)p.x).append(",")
                           .append((int)p.y).append(",")
-                          .append(p.currentState).append(",")  // Dinamis
-                          .append(p.currentDir);               // Dinamis
+                          .append(p.currentState).append(",")  
+                          .append(p.currentDir);               
                         
                         if (i < players.size() - 1) sb.append("#");
                     }
                     sb.append("|||"); 
-                    
-                    // [DEBUG OPTIONAL] Uncomment baris di bawah ini jika ingin melihat setiap paket (SPAMMY!)
-                    // System.out.println("Sending: " + sb.toString());
                     
                     broadcast(sb.toString());
 
@@ -180,6 +186,7 @@ public class SimpleTestServer {
     }
 
     // ===================== CLIENT HANDLER =======================
+    // (Tidak ada perubahan di Class ClientHandler, disederhanakan untuk jawaban)
     static class ClientHandler implements Runnable {
         private Socket socket;
         private PrintWriter out;
@@ -210,10 +217,7 @@ public class SimpleTestServer {
 
         public void send(String msg) { if (out != null) out.println(msg); }
         
-        public void sendRoomList() {
-            // Logic sendRoomList sama dengan logic global
-            SimpleTestServer.broadcastRoomList();
-        }
+        public void sendRoomList() { SimpleTestServer.broadcastRoomList(); }
 
         private void handleMessage(String msg) {
             try {
@@ -261,27 +265,19 @@ public class SimpleTestServer {
                          new Thread(() -> {
                              System.out.println("[ROOM " + currentRoom.name + "] Starting game...");
                              currentRoom.initGameMap();
-                             
-                             // [UPDATE 2] Set gameStarted true dan update lobby
                              currentRoom.gameStarted = true;
-                             SimpleTestServer.broadcastRoomList(); // Broadcast agar room hilang dari lobby
-                             
+                             SimpleTestServer.broadcastRoomList(); 
                              currentRoom.broadcast("GAME_STARTED");
                              String mapData = currentRoom.getMapString();
                              currentRoom.broadcast("MAP;13;13;" + mapData);
                          }).start();
                     }
                 }
-                // --- INPUT HANDLER DENGAN DEBUG ---
                 else if (command.equals("INPUT") && currentRoom != null) {
                       if (currentRoom.players.size() > playerId) {
                           PlayerState p = currentRoom.players.get(playerId);
                           String key = parts[1];
-                          boolean pressed = Boolean.parseBoolean(parts[2]); // FIX Input
-                          
-                          // Debug Print Input Masuk
-                          // System.out.println("[INPUT] Player " + playerId + " " + key + " = " + pressed);
-
+                          boolean pressed = Boolean.parseBoolean(parts[2]); 
                           switch (key) {
                             case "UP"    -> p.up = pressed;
                             case "DOWN"  -> p.down = pressed;
@@ -335,6 +331,31 @@ public class SimpleTestServer {
 
             return isSolid(left, top) || isSolid(right, top) || isSolid(left, bottom) || isSolid(right, bottom);
         }
+        
+        // [UPDATE 2] Method baru untuk mengecek tabrakan antar player
+        public boolean checkPlayerCollision(double newX, double newY, PlayerState self, List<PlayerState> allPlayers) {
+            double selfL = newX + offset;
+            double selfT = newY + offset;
+            double selfR = selfL + hitboxSize;
+            double selfB = selfT + hitboxSize;
+
+            for (PlayerState other : allPlayers) {
+                // Jangan cek tabrakan dengan diri sendiri
+                if (other == self) continue; 
+
+                double otherL = other.x + offset;
+                double otherT = other.y + offset;
+                double otherR = otherL + hitboxSize;
+                double otherB = otherT + hitboxSize;
+
+                // Logic Intersection Rectangle (AABB)
+                // Jika "Kotak Saya" tumpang tindih dengan "Kotak Orang Lain"
+                if (selfL < otherR && selfR > otherL && selfT < otherB && selfB > otherT) {
+                    return true; // Tabrakan!
+                }
+            }
+            return false;
+        }
 
         private boolean isSolid(double px, double py) {
             int gridX = (int) (px / tileSize);
@@ -345,7 +366,7 @@ public class SimpleTestServer {
         }
     }
 
-    // ===================== MAP GENERATOR =======================
+    // ===================== MAP GENERATOR (SAMA SEPERTI SEBELUMNYA) =======================
     static class MapGenerator {
         public static int[][] generateMapArray(int w, int h) {
             int[][] map = new int[w][h];
@@ -375,7 +396,7 @@ public class SimpleTestServer {
         }
     }
     
-    // ===================== PLAYER STATE (WITH DEBUG) =======================
+    // ===================== PLAYER STATE =======================
     static class PlayerState {
         int id; 
         double x, y;
@@ -391,7 +412,7 @@ public class SimpleTestServer {
         
         public void updateAnimLogic() {
             boolean isMoving = up || down || left || right;
-            String oldState = currentState; // Simpan state lama
+            String oldState = currentState; 
             
             if (isMoving) {
                 currentState = "WALK";
@@ -404,10 +425,8 @@ public class SimpleTestServer {
                 currentState = "IDLE";
             }
 
-            // --- DEBUG PRINT: HANYA MUNCUL JIKA STATUS BERUBAH ---
             if (!currentState.equals(oldState)) {
-                System.out.println("[DEBUG P" + id + "] Changed to: " + currentState + " (" + currentDir + ")");
-                System.out.println("   --> Input: U=" + up + " D=" + down + " L=" + left + " R=" + right);
+                // Debug log
             }
         }
     }
