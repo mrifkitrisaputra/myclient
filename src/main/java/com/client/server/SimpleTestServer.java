@@ -7,9 +7,11 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashSet; // Import baru
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;     // Import baru
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -59,6 +61,9 @@ public class SimpleTestServer {
         private double gameTime = 180.0; // 3 Menit
         private boolean isGameOver = false;
 
+        // --- Vote Rematch Data ---
+        Set<Integer> rematchVotes = new HashSet<>();
+
         List<PlayerState> players = new CopyOnWriteArrayList<>();
         List<ClientHandler> clients = new CopyOnWriteArrayList<>();
         
@@ -95,6 +100,9 @@ public class SimpleTestServer {
 
         public synchronized void removePlayer(ClientHandler client, int playerId) {
             clients.remove(client);
+            // Hapus vote jika player keluar
+            rematchVotes.remove(playerId);
+
             if (client == host && !clients.isEmpty()) {
                 host = clients.get(0);
                 System.out.println("[ROOM " + name + "] Host migrated to ID " + host.playerId);
@@ -107,6 +115,35 @@ public class SimpleTestServer {
             } else {
                 broadcastRoomInfo();
             }
+        }
+
+        // --- LOGIC RESTART GAME ---
+        public synchronized void restartGame() {
+            System.out.println("[ROOM " + name + "] RESTARTING GAME...");
+            
+            // 1. Reset Game State
+            this.gameTime = 180.0;
+            this.isGameOver = false;
+            this.rematchVotes.clear();
+            this.bombs.clear();
+            this.items.clear();
+            this.players.clear();
+
+            // 2. Generate Map Baru
+            initGameMap();
+
+            // 3. Reset Pemain (Spawn ulang & Reset Stats)
+            for (ClientHandler c : clients) {
+                double spawnX = (1 + c.playerId) * 32;
+                double spawnY = 32;
+                this.players.add(new PlayerState(c.playerId, spawnX, spawnY));
+            }
+
+            // 4. Broadcast Info ke Client
+            broadcast("GAME_STARTED"); // Client akan menutup popup game over
+            String mapStr = getMapString();
+            broadcast("MAP;13;13;" + mapStr);
+            broadcastRoomInfo();
         }
 
         public void broadcastRoomInfo() {
@@ -122,88 +159,109 @@ public class SimpleTestServer {
         }
 
         @Override
-        public void run() {
-            long lastTime = System.nanoTime();
+public void run() {
+    long lastTime = System.nanoTime();
 
-            while (isRunning) {
-                try {
-                    long now = System.nanoTime();
-                    double dt = (now - lastTime) / 1_000_000_000.0;
-                    lastTime = now;
+    while (isRunning) {
+        try {
+            long now = System.nanoTime();
+            // Hitung Delta Time (selisih waktu dalam detik)
+            double dt = (now - lastTime) / 1_000_000_000.0;
+            lastTime = now;
 
-                    Thread.sleep(16); // ~60 FPS
+            // SAFETY: Batasi dt agar jika lag parah, player tidak tembus tembok (teleport)
+            if (dt > 0.05) dt = 0.05; 
 
-                    if (!gameStarted || clients.isEmpty() || collisionHandler == null || isGameOver) continue;
+            // Thread sleep tetap ada untuk menjaga penggunaan CPU rendah
+            Thread.sleep(16); 
 
-                    // --- TIMER ---
-                    gameTime -= dt;
-                    if (gameTime <= 0) {
-                        gameTime = 0;
-                        isGameOver = true;
-                        broadcast("GAME_OVER;TIME_UP");
-                    }
+            if (!gameStarted || clients.isEmpty() || collisionHandler == null || isGameOver) continue;
 
-                    // --- BOMB TICK ---
-                    for (Bomb b : bombs) {
-                        b.tick();
-                    }
-                    bombs.removeIf(b -> b.exploded);
-
-                    // --- PHYSICS UPDATE ---
-                    for (PlayerState p : players) {
-                        if (p.dead) continue;
-
-                        double nextX = p.x;
-                        double nextY = p.y;
-
-                        if (p.left)  nextX -= p.speed;
-                        if (p.right) nextX += p.speed;
-                        if (p.up)    nextY -= p.speed;
-                        if (p.down)  nextY += p.speed;
-
-                        // Cek collision MAP dan PLAYER dan BOMB
-                        boolean collideMapX = collisionHandler.checkCollision(nextX, p.y);
-                        boolean collidePlayerX = collisionHandler.checkPlayerCollision(nextX, p.y, p, players);
-
-                        if (!collideMapX && !collidePlayerX) {
-                            p.x = nextX;
-                        }
-
-                        boolean collideMapY = collisionHandler.checkCollision(p.x, nextY);
-                        boolean collidePlayerY = collisionHandler.checkPlayerCollision(p.x, nextY, p, players);
-
-                        if (!collideMapY && !collidePlayerY) {
-                            p.y = nextY;
-                        }
-
-                        p.updateAnimLogic();
-                        
-                        // --- CHECK ITEM PICKUP ---
-                        checkItemPickup(p);
-                    }
-
-                    // --- BROADCAST STATE ---
-                    StringBuilder sb = new StringBuilder("STATE;");
-                    sb.append((int) Math.ceil(gameTime)).append(";");
-
-                    for (int i = 0; i < players.size(); i++) {
-                        PlayerState p = players.get(i);
-                        sb.append(p.id).append(",")
-                                .append((int) p.x).append(",")
-                                .append((int) p.y).append(",")
-                                .append(p.currentState).append(",")
-                                .append(p.currentDir);
-                        if (i < players.size() - 1) sb.append("#");
-                    }
-                    sb.append("|||");
-                    broadcast(sb.toString());
-
-                } catch (Exception e) {
-                    System.err.println("Game Loop Error: " + e.getMessage());
-                }
+            // --- TIMER ---
+            gameTime -= dt;
+            if (gameTime <= 0) {
+                gameTime = 0;
+                isGameOver = true;
+                broadcast("GAME_OVER;TIME_UP");
             }
+
+            // --- BOMB TICK ---
+            for (Bomb b : bombs) {
+                b.tick();
+            }
+            bombs.removeIf(b -> b.exploded);
+
+            // --- PHYSICS UPDATE (DENGAN DELTA TIME) ---
+            // Target: 60 FPS. Jika dt 0.016 (normal), multiplier = 1.0.
+            double multiplier = dt * 45.0; 
+
+            for (PlayerState p : players) {
+                if (p.dead) continue;
+
+                double nextX = p.x;
+                double nextY = p.y;
+                
+                // Gunakan multiplier agar speed konsisten berapapun jumlah playernya
+                double moveAmt = p.speed * multiplier; 
+
+                if (p.left)  nextX -= moveAmt;
+                if (p.right) nextX += moveAmt;
+                if (p.up)    nextY -= moveAmt;
+                if (p.down)  nextY += moveAmt;
+
+                // Cek collision MAP dan PLAYER dan BOMB
+                boolean collideMapX = collisionHandler.checkCollision(nextX, p.y);
+                boolean collidePlayerX = collisionHandler.checkPlayerCollision(nextX, p.y, p, players);
+
+                if (!collideMapX && !collidePlayerX) {
+                    p.x = nextX;
+                }
+
+                boolean collideMapY = collisionHandler.checkCollision(p.x, nextY);
+                boolean collidePlayerY = collisionHandler.checkPlayerCollision(p.x, nextY, p, players);
+
+                if (!collideMapY && !collidePlayerY) {
+                    p.y = nextY;
+                }
+
+                p.updateAnimLogic();
+                checkItemPickup(p);
+            }
+            
+            // ... (Kode Broadcast State & Win Condition Tetap Sama) ...
+            
+            // --- BROADCAST STATE ---
+            StringBuilder sb = new StringBuilder("STATE;");
+            sb.append((int) Math.ceil(gameTime)).append(";");
+
+            for (int i = 0; i < players.size(); i++) {
+                PlayerState p = players.get(i);
+                sb.append(p.id).append(",")
+                        .append((int) p.x).append(",")
+                        .append((int) p.y).append(",")
+                        .append(p.currentState).append(",")
+                        .append(p.currentDir);
+                if (i < players.size() - 1) sb.append("#");
+            }
+            sb.append("|||");
+            broadcast(sb.toString());
+
+        } catch (Exception e) {
+            System.err.println("Game Loop Error: " + e.getMessage());
         }
         
+        // ... (Kode Check Win Condition Tetap Sama) ...
+         long aliveCount = players.stream().filter(p -> !p.dead).count();
+         if (gameStarted && players.size() > 1 && aliveCount <= 1 && !isGameOver) {
+             isGameOver = true;
+             int winnerId = -1;
+             for (PlayerState p : players) {
+                 if (!p.dead) { winnerId = p.id; break; }
+             }
+             broadcast("GAME_OVER;" + winnerId);
+         }
+    }
+}
         // --- LOGIC ITEM PICKUP ---
         private void checkItemPickup(PlayerState p) {
             int tileSize = 32;
@@ -268,10 +326,8 @@ public class SimpleTestServer {
     // ===================== CLASS BOMB =======================
     static class Bomb {
         int x, y, ownerId, range;
-        int timer = 60; // ~3 detik
+        int timer = 60; 
         boolean exploded = false;
-        
-        // Logic Solid: Bomb bisa dilewati 0.5 detik pertama
         boolean isSolid = false;
         int solidDelay = 15; 
         
@@ -283,37 +339,51 @@ public class SimpleTestServer {
 
         public void tick() {
             if (exploded) return;
-            
-            // Update status solid
             if (solidDelay > 0) {
                 solidDelay--;
                 if (solidDelay <= 0) isSolid = true;
             }
-
             timer--;
             if (timer <= 0) explode();
         }
 
         private void explode() {
             exploded = true;
-            List<String> parts = new ArrayList<>(); // Simpan string part ledakan
+            List<String> parts = new ArrayList<>(); 
+            
+            // Visual Pusat
             parts.add(x + "," + y + ",false");
+
+            // --- FIX 2: CEK PLAYER DI TITIK TENGAH BOM ---
+            checkPlayerHit(x, y); 
+            // ---------------------------------------------
 
             calculateRay(1, 0, parts);  // Kanan
             calculateRay(-1, 0, parts); // Kiri
             calculateRay(0, 1, parts);  // Bawah
             calculateRay(0, -1, parts); // Atas
             
-            // Broadcast Visual
             StringBuilder sb = new StringBuilder("EXPLOSION;").append(x).append(",").append(y);
             for(String p : parts) sb.append(";").append(p);
             room.broadcast(sb.toString());
 
-            // Reduce ammo player
             for(PlayerState p : room.players) {
                 if(p.id == ownerId) {
                     p.activeBombs = Math.max(0, p.activeBombs - 1);
                     break;
+                }
+            }
+        }
+        
+        // Method helper baru untuk cek kill player
+        private void checkPlayerHit(int tx, int ty) {
+            for (PlayerState p : room.players) {
+                int px = (int)((p.x + 16)/32);
+                int py = (int)((p.y + 16)/32);
+                if (px == tx && py == ty && !p.dead) {
+                    p.dead = true;
+                    p.currentState = "DEAD";
+                    room.broadcast("PLAYER_DIED;" + p.id);
                 }
             }
         }
@@ -323,23 +393,13 @@ public class SimpleTestServer {
                 int tx = x + (dx * i);
                 int ty = y + (dy * i);
 
-                // Kena tembok keras -> stop
                 if (room.isSolidTile(tx, ty)) break;
 
                 parts.add(tx + "," + ty + "," + (dy!=0));
 
-                // Kena player logic
-                for (PlayerState p : room.players) {
-                    int px = (int)((p.x + 16)/32);
-                    int py = (int)((p.y + 16)/32);
-                    if (px == tx && py == ty && !p.dead) {
-                        p.dead = true;
-                        p.currentState = "DEAD";
-                        room.broadcast("PLAYER_DIED;" + p.id);
-                    }
-                }
+                // Panggil helper yang baru dibuat
+                checkPlayerHit(tx, ty);
                 
-                // Kena tembok hancur -> hancurkan & stop
                 if (room.isBreakableTile(tx, ty)) {
                     room.breakTile(tx, ty);
                     break; 
@@ -431,16 +491,62 @@ public class SimpleTestServer {
                     }
                 } else if (command.equals("START_GAME") && currentRoom != null) {
                     if (currentRoom.host == this && currentRoom.clients.size() >= 1) {
-                        new Thread(() -> {
-                            System.out.println("[ROOM " + currentRoom.name + "] Starting game...");
-                            currentRoom.initGameMap();
-                            currentRoom.gameStarted = true;
-                            SimpleTestServer.broadcastRoomList();
-                            currentRoom.broadcast("GAME_STARTED");
-                            String mapData = currentRoom.getMapString();
-                            currentRoom.broadcast("MAP;13;13;" + mapData);
-                        }).start();
+        
+        // Cek apakah ini Restart (Game Over) atau Start Awal (Game Belum Mulai)
+        if (currentRoom.isGameOver || !currentRoom.gameStarted) {
+             // Logic Restart/Start digabung
+             new Thread(() -> {
+                System.out.println("[ROOM " + currentRoom.name + "] Starting/Restarting game...");
+                
+                // Jika restart, reset dulu variable state-nya
+                if (currentRoom.isGameOver) {
+                    currentRoom.rematchVotes.clear();
+                    currentRoom.bombs.clear();
+                    currentRoom.items.clear();
+                    currentRoom.players.clear();
+                    currentRoom.gameTime = 180.0;
+                    currentRoom.isGameOver = false;
+                    // Reset posisi player
+                    currentRoom.initGameMap(); // Regen Map
+                    for (ClientHandler c : currentRoom.clients) {
+                        double spawnX = (1 + c.playerId) * 32;
+                        double spawnY = 32;
+                        currentRoom.players.add(new PlayerState(c.playerId, spawnX, spawnY));
                     }
+                } else {
+                    // Start awal
+                    currentRoom.initGameMap();
+                }
+
+                currentRoom.gameStarted = true;
+                SimpleTestServer.broadcastRoomList();
+                
+                // Kirim Sinyal Start
+                currentRoom.broadcast("GAME_STARTED");
+                
+                String mapData = currentRoom.getMapString();
+                currentRoom.broadcast("MAP;13;13;" + mapData);
+                
+                // Broadcast info room terbaru (agar client tau posisi/state awal)
+                currentRoom.broadcastRoomInfo();
+            }).start();
+        }
+    }
+                } else if (command.equals("VOTE_REMATCH") && currentRoom != null) {
+                    // --- LOGIC BARU: VOTE REMATCH ---
+                    synchronized (currentRoom) {
+        // 1. Tambah Vote
+        currentRoom.rematchVotes.add(playerId);
+        
+        int currentVotes = currentRoom.rematchVotes.size();
+        int totalPlayers = currentRoom.clients.size();
+        
+        // 2. JANGAN Restart otomatis.
+        // Kirim update jumlah vote ke semua client agar label berubah
+        currentRoom.broadcast("REMATCH_UPDATE;" + currentVotes + ";" + totalPlayers);
+        
+        System.out.println("[ROOM] Rematch Vote Update: " + currentVotes + "/" + totalPlayers);
+    }
                 } else if (command.equals("INPUT") && currentRoom != null) {
                     if (currentRoom.players.size() > playerId) {
                         PlayerState p = currentRoom.players.get(playerId);

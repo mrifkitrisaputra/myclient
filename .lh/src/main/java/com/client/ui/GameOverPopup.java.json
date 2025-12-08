@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 12,
+            "activePatchIndex": 14,
             "patches": [
                 {
                     "date": 1764831883081,
@@ -56,6 +56,14 @@
                 {
                     "date": 1765197721328,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -86,14 +86,16 @@\n         this.getChildren().addAll(title, lblVotes, voteBox, btnStartGame);\r\n     }\r\n \r\n     // Method untuk diupdate oleh PacketParser/SceneManager\r\n-    public void updateVoteText(int current, int total) {\r\n+public void updateVoteText(int current, int total) {\r\n+        // Wajib pakai Platform.runLater karena dipanggil dari thread network\r\n         Platform.runLater(() -> {\r\n+            // Ganti teks labelnya!\r\n             lblVotes.setText(\"Rematch Votes: \" + current + \" / \" + total);\r\n             \r\n-            // Opsional: Jika semua sudah vote, ubah warna tombol start biar menarik perhatian Host\r\n-            if (current == total && btnStartGame.isVisible()) {\r\n+            // (Opsional) Efek visual ke tombol host jika vote penuh\r\n+            if (current == total && btnStartGame != null && btnStartGame.isVisible()) {\r\n                 btnStartGame.setText(\"START NOW! (\" + current + \"/\" + total + \")\");\r\n             }\r\n         });\r\n     }\r\n"
+                },
+                {
+                    "date": 1765198003905,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -20,9 +20,9 @@\n \r\n     public GameOverPopup(boolean isWin) {\r\n         this.setAlignment(Pos.CENTER);\r\n         this.setSpacing(20);\r\n-        this.setStyle(\"-fx-background-color: rgba(0, 0, 0, 0.9); -fx-padding: 40; -fx-background-radius: 20; -fx-border-color: white; -fx-border-width: 1; -fx-border-radius: 20;\");\r\n+        this.setStyle(\"-fx-background-color: rgba(0, 0, 0, 0.9); -fx-padding: 40; -fx-background-radius: 20;\");\r\n         this.setMaxSize(500, 450); // Tinggi ditambah sedikit\r\n \r\n         // --- TITLE ---\r\n         Label title = new Label(isWin ? \"VICTORY!\" : \"YOU DIED\");\r\n"
+                },
+                {
+                    "date": 1765199242329,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -20,9 +20,9 @@\n \r\n     public GameOverPopup(boolean isWin) {\r\n         this.setAlignment(Pos.CENTER);\r\n         this.setSpacing(20);\r\n-        this.setStyle(\"-fx-background-color: rgba(0, 0, 0, 0.9); -fx-padding: 40; -fx-background-radius: 20;\");\r\n+        this.setStyle(\"-fx-background-color: rgba(0, 0, 0, 0.9); -fx-padding: 40; -fx-background-radius: 20; -fx-border-color: white; -fx-border-width: 1; -fx-border-radius: 20;\");\r\n         this.setMaxSize(500, 450); // Tinggi ditambah sedikit\r\n \r\n         // --- TITLE ---\r\n         Label title = new Label(isWin ? \"VICTORY!\" : \"YOU DIED\");\r\n"
                 }
             ],
             "date": 1764831883081,

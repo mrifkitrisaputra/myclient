@@ -21,7 +21,7 @@ public class GameOverPopup extends VBox {
     public GameOverPopup(boolean isWin) {
         this.setAlignment(Pos.CENTER);
         this.setSpacing(20);
-        this.setStyle("-fx-background-color: rgba(0, 0, 0, 0.9); -fx-padding: 40; -fx-background-radius: 20; -fx-border-color: white; -fx-border-width: 1; -fx-border-radius: 20;");
+        this.setStyle("-fx-background-color: rgba(0, 0, 0, 0.9); -fx-padding: 40; -fx-background-radius: 20;");
         this.setMaxSize(500, 450); // Tinggi ditambah sedikit
 
         // --- TITLE ---
