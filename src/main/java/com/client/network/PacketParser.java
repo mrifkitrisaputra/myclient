@@ -183,6 +183,14 @@ public class PacketParser {
         System.err.println("Error parsing REMATCH_UPDATE");
     }
 }
+        case "RESET_GAME_STATE" -> {
+    System.out.println("Cleaning up local game state...");
+    // Pastikan list bomb, item, dan explosion di-clear
+    gameState.clearBombs(); 
+    gameState.clearItems();
+    gameState.clearExplosions();
+    gameState.clearPlayers();
+}
         }
     }
 
