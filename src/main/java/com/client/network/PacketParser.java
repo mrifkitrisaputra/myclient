@@ -1,103 +1,157 @@
-package com.client.network; 
-
-import java.util.ArrayList;
-import java.util.List;
+package com.client.network;
 
 import com.client.App;
 import com.client.ClientGameState;
-import com.client.entities.VisualPlayer; 
+import com.client.entities.VisualPlayer;
 import com.client.render.SpriteLoader;
-import com.client.ui.SceneManager; 
+import com.client.ui.SceneManager;
 
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class PacketParser {
 
     private final ClientGameState gameState;
-    private final SpriteLoader spriteLoader; 
+    private final SpriteLoader spriteLoader;
 
     public PacketParser(ClientGameState gameState) {
         this.gameState = gameState;
-        this.spriteLoader = new SpriteLoader(); 
+        this.spriteLoader = new SpriteLoader();
     }
 
     public void parse(String packet) {
         if (packet == null || packet.isEmpty()) return;
 
-        // Split Command dan Sisa Data
+        // Pisahkan command utama dengan datanya
         String[] parts = packet.split(";", 2);
         String command = parts[0];
         String data = parts.length > 1 ? parts[1] : "";
 
         switch (command) {
+            // ================= GAMEPLAY EVENTS =================
+
+            case "BOMB_PLACED" -> {
+                // Server kirim: BOMB_PLACED;x,y;ownerId
+                try {
+                    String[] info = data.split(";");
+                    String[] coords = info[0].split(",");
+                    int bx = Integer.parseInt(coords[0]);
+                    int by = Integer.parseInt(coords[1]);
+                    
+                    // Masukkan ke State agar dirender
+                    gameState.addBomb(bx, by);
+                    System.out.println("[CLIENT] Bomb spawned at " + bx + "," + by);
+                } catch (Exception e) {
+                    System.err.println("Error parsing BOMB_PLACED: " + e.getMessage());
+                }
+            }
+
+            case "EXPLOSION" -> {
+                // Server kirim: EXPLOSION;centerX,centerY;part1;part2...
+                try {
+                    String[] sections = data.split(";");
+                    
+                    // 1. Ambil Pusat Ledakan & Hapus Bom Visualnya
+                    String[] center = sections[0].split(",");
+                    int cx = Integer.parseInt(center[0]);
+                    int cy = Integer.parseInt(center[1]);
+                    
+                    gameState.removeBombAt(cx, cy);
+                    gameState.addExplosion(cx, cy, false);
+
+                    // 2. Loop sisa part ledakan (api)
+                    for (int i = 1; i < sections.length; i++) {
+                        String[] p = sections[i].split(",");
+                        int px = Integer.parseInt(p[0]);
+                        int py = Integer.parseInt(p[1]);
+                        boolean vert = Boolean.parseBoolean(p[2]);
+                        gameState.addExplosion(px, py, vert);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            case "BREAK_TILE" -> {
+                // Server kirim: BREAK_TILE;x,y
+                try {
+                    String[] coords = data.split(",");
+                    int tx = Integer.parseInt(coords[0]);
+                    int ty = Integer.parseInt(coords[1]);
+                    gameState.breakTile(tx, ty);
+                } catch (Exception e) {}
+            }
+
+            case "SPAWN_ITEM" -> {
+                // Server kirim: SPAWN_ITEM;x,y,TYPE
+                try {
+                    String[] info = data.split(",");
+                    int ix = Integer.parseInt(info[0]);
+                    int iy = Integer.parseInt(info[1]);
+                    String type = info[2];
+                    gameState.spawnItem(ix, iy, type);
+                } catch (Exception e) {}
+            }
+
+            case "ITEM_PICKED" -> {
+                // Server kirim: ITEM_PICKED;pid,x,y,TYPE
+                try {
+                    String[] info = data.split(",");
+                    // info[0] adalah playerID, kita butuh koordinat utk hapus visual
+                    int ix = Integer.parseInt(info[1]);
+                    int iy = Integer.parseInt(info[2]);
+                    gameState.removeItemAt(ix, iy);
+                } catch (Exception e) {}
+            }
+
+            // ================= STATE & SYNC =================
+
+            case "STATE" -> parseState(data); // Posisi Player & Waktu
+            case "MAP" -> parseMap(data);     // Load awal map
+
+            // ================= LOBBY & SYSTEM =================
+
             case "YOUR_ID" -> {
                 try {
                     gameState.setMyPlayerId(Integer.parseInt(data));
-                    Platform.runLater(() -> {
-                        // Pastikan pendingRoomName ada isinya di App
-                        SceneManager.toRoom(App.pendingRoomName);
-                    });
+                    Platform.runLater(() -> SceneManager.toRoom(App.pendingRoomName));
                 } catch (Exception e) {}
             }
-            
-            case "ERROR" -> {
-                System.err.println("Server Error: " + data);
-                Platform.runLater(() -> {
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setTitle("Join Failed");
-                    alert.setHeaderText("Cannot Join Room");
-                    alert.setContentText(data);
-                    alert.showAndWait();
-                });
-            }
-            
-            case "GAME_OVER" -> {
-                 // Handle Game Over (Menang/Kalah)
-                 // data bisa berisi "TIME_UP" atau info lain
-                 System.out.println("GAME OVER: " + data);
-            }
-
+            case "GAME_STARTED" -> Platform.runLater(App::startGame);
+            case "GAME_OVER" -> System.out.println("GAME OVER: " + data);
+            case "ERROR" -> Platform.runLater(() -> {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setContentText(data);
+                alert.showAndWait();
+            });
             case "ROOM_UPDATE" -> parseRoomUpdate(data);
             case "ROOM_LIST" -> parseRoomList(data);
-            case "GAME_STARTED" -> Platform.runLater(App::startGame);
-            case "MAP" -> parseMap(data);
-            case "STATE" -> parseState(data);
         }
     }
 
-    // [UPDATE PENTING] Parse State sekarang menangani WAKTU
     private void parseState(String data) {
-        // Format dari Server: "Waktu;P1#P2#P3...|||"
-        
-        // 1. Bersihkan penanda akhir paket
         String cleanData = data.replace("|||", "");
-
-        // 2. Pisahkan WAKTU dan DATA PLAYER
-        // limit 2 berarti split jadi [Waktu, SisaString]
         String[] parts = cleanData.split(";", 2);
-
-        // Parse Waktu (Bagian pertama)
+        
+        // Parse Waktu
         if (parts.length >= 1) {
             try {
-                double time = Double.parseDouble(parts[0]);
-                gameState.setGameTime(time); // Pastikan method ini ada di ClientGameState
-            } catch (NumberFormatException e) {}
+                gameState.setGameTime(Double.parseDouble(parts[0]));
+            } catch (Exception e) {}
         }
-
-        // Parse Player (Bagian kedua, jika ada)
-        if (parts.length >= 2) {
-            parsePlayers(parts[1]);
-        } else {
-            // Kalau tidak ada data player (misal kosong), clear players
-            gameState.clearPlayers();
-        }
+        
+        // Parse Players
+        if (parts.length >= 2) parsePlayers(parts[1]);
+        else gameState.clearPlayers();
     }
 
     private void parsePlayers(String section) {
         if (section.isEmpty() || section.equals("NP")) { 
             gameState.clearPlayers(); 
-            return;
+            return; 
         }
 
         List<VisualPlayer> currentPlayers = gameState.getPlayers();
@@ -115,10 +169,7 @@ public class PacketParser {
                 
                 VisualPlayer targetPlayer = null;
                 for (VisualPlayer existing : currentPlayers) {
-                    if (existing.id == id) {
-                        targetPlayer = existing; 
-                        break;
-                    }
+                    if (existing.id == id) { targetPlayer = existing; break; }
                 }
 
                 if (targetPlayer != null) {
@@ -127,37 +178,11 @@ public class PacketParser {
                     targetPlayer = new VisualPlayer(id, spriteLoader);
                     targetPlayer.setNetworkState(x, y, VisualPlayer.State.valueOf(stateStr), VisualPlayer.Direction.valueOf(dirStr));
                 }
-
                 nextFramePlayers.add(targetPlayer);
 
             } catch (Exception e) {}
         }
-        
         gameState.updatePlayers(nextFramePlayers);
-    }
-
-    // --- Method Parsing Lain Tetap Sama ---
-
-    private void parseRoomUpdate(String data) {
-        try {
-            String[] section = data.split(";");
-            int hostId = Integer.parseInt(section[0]);
-            String[] idsStr = section[1].split(",");
-            List<Integer> ids = new ArrayList<>();
-            for(String s : idsStr) {
-                if(!s.trim().isEmpty()) ids.add(Integer.parseInt(s.trim()));
-            }
-            gameState.updateRoomPlayers(hostId, ids);
-        } catch (Exception e) {}
-    }
-
-    private void parseRoomList(String data) {
-        String[] raw = data.split(",");
-        List<String> rooms = new ArrayList<>();
-        for (String r : raw) {
-            if (!r.trim().isEmpty()) rooms.add(r.trim());
-        }
-        gameState.updateRooms(rooms);
     }
 
     private void parseMap(String data) {
@@ -173,5 +198,23 @@ public class PacketParser {
             }
             gameState.setMap(map);
         } catch (Exception e) {}
+    }
+
+    private void parseRoomUpdate(String data) {
+        try {
+            String[] section = data.split(";");
+            int hostId = Integer.parseInt(section[0]);
+            String[] idsStr = section[1].split(",");
+            List<Integer> ids = new ArrayList<>();
+            for(String s : idsStr) if(!s.trim().isEmpty()) ids.add(Integer.parseInt(s.trim()));
+            gameState.updateRoomPlayers(hostId, ids);
+        } catch (Exception e) {}
+    }
+
+    private void parseRoomList(String data) {
+        String[] raw = data.split(",");
+        List<String> rooms = new ArrayList<>();
+        for (String r : raw) if (!r.trim().isEmpty()) rooms.add(r.trim());
+        gameState.updateRooms(rooms);
     }
 }

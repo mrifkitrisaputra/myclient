@@ -1,64 +1,101 @@
 package com.client.entities;
 
-import java.util.List;
-
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
+import javafx.scene.paint.Color;
 
 public class VisualExplosion {
-    // Data visual murni
-    public static record ExplosionPart(int x, int y, boolean isVertical) {}
-
-    private final int centerX, centerY;
-    private final List<ExplosionPart> parts;
     
-    // Animasi
-    private final Image centerImg;
-    private final Image[] hAnimation; 
-    private final Image[] vAnimation; 
+    public final int tileX;
+    public final int tileY;
+    private final boolean isVertical;
+    
+    // Lifecycle: Menandakan animasi selesai agar dihapus dari GameState
+    private boolean finished = false;
 
+    // Animasi
+    private Image[] sprites;
+    private final float frameDuration = 0.1f; // Kecepatan animasi (0.1 detik per frame)
     private float animTimer = 0;
     private int frameIndex = 0;
-    private final int totalFrames = 4; 
+    
+    // Status visual
+    private boolean imageLoaded = false;
     private final int tileSize = 32;
 
-    // Constructor menerima parts yang sudah dihitung Server
-    public VisualExplosion(int startX, int startY, List<ExplosionPart> serverParts) {
-        this.centerX = startX;
-        this.centerY = startY;
-        this.parts = serverParts; // Terima daftar koordinat dari server
+    // Constructor: Menerima 1 koordinat tile, bukan List
+    public VisualExplosion(int x, int y, boolean isVertical) {
+        this.tileX = x;
+        this.tileY = y;
+        this.isVertical = isVertical;
 
-        // Load Asset
-        centerImg = new Image(getClass().getResourceAsStream("/com/client/assets/explosion/e_largeexplosion1.png"), tileSize, tileSize, false, false);
-        
-        hAnimation = new Image[4];
-        vAnimation = new Image[4];
-        for (int i = 0; i < 4; i++) {
-            hAnimation[i] = new Image(getClass().getResourceAsStream("/com/client/assets/explosion/e_horizontal" + (i+1) + ".png"), tileSize, tileSize, false, false);
-            vAnimation[i] = new Image(getClass().getResourceAsStream("/com/client/assets/explosion/e_vertical" + (i+1) + ".png"), tileSize, tileSize, false, false);
+        loadResources();
+    }
+
+    private void loadResources() {
+        try {
+            // Kita siapkan array 4 frame (sesuai aset kamu)
+            sprites = new Image[4];
+            String type = isVertical ? "vertical" : "horizontal";
+
+            // Loop load e_horizontal1.png s/d e_horizontal4.png
+            for (int i = 0; i < 4; i++) {
+                String path = "/com/client/assets/explosion/e_" + type + (i + 1) + ".png";
+                sprites[i] = new Image(getClass().getResourceAsStream(path), tileSize, tileSize, false, false);
+            }
+            
+            // Cek validitas gambar pertama
+            if (!sprites[0].isError()) {
+                imageLoaded = true;
+            }
+        } catch (Exception e) {
+            System.err.println("GAGAL LOAD GAMBAR EXPLOSION: " + e.getMessage());
+            imageLoaded = false;
         }
     }
 
     public void update(double dt) {
-        // Hanya update animasi api membesar/mengecil
-        float timePerFrame = 0.8f / totalFrames; 
+        if (finished) return;
+
         animTimer += dt;
-        
-        if (animTimer >= timePerFrame) {
+        if (animTimer >= frameDuration) {
             animTimer = 0;
             frameIndex++;
-            if (frameIndex >= totalFrames) frameIndex = totalFrames - 1; 
+            
+            // Jika frame sudah melebihi jumlah sprite, animasi selesai
+            if (imageLoaded && frameIndex >= sprites.length) {
+                finished = true;
+            } 
+            // Fallback logic jika gambar tidak ada (durasi manual)
+            else if (!imageLoaded && frameIndex >= 5) {
+                finished = true;
+            }
         }
     }
 
     public void render(GraphicsContext g) {
-        // Render Pusat
-        g.drawImage(centerImg, centerX * tileSize, centerY * tileSize);
+        if (finished) return;
 
-        // Render Bagian Api (Daftar koordinat dari Server)
-        for (ExplosionPart part : parts) {
-            Image sprite = part.isVertical ? vAnimation[frameIndex] : hAnimation[frameIndex];
-            g.drawImage(sprite, part.x * tileSize, part.y * tileSize);
+        double px = tileX * tileSize;
+        double py = tileY * tileSize;
+
+        if (imageLoaded) {
+            // Safety check array bounds
+            if (frameIndex < sprites.length) {
+                g.drawImage(sprites[frameIndex], px, py);
+            }
+        } else {
+            // FALLBACK: Kotak Oranye Transparan
+            g.setFill(Color.ORANGE.deriveColor(0, 1, 1, 0.7));
+            g.fillRect(px, py, tileSize, tileSize);
+            
+            g.setStroke(Color.RED);
+            g.strokeRect(px, py, tileSize, tileSize);
         }
+    }
+
+    // Dipanggil oleh ClientGameState untuk bersih-bersih memory
+    public boolean isFinished() {
+        return finished;
     }
 }
