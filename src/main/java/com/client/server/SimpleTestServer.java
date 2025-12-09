@@ -58,7 +58,7 @@ public class SimpleTestServer {
         boolean gameStarted = false;
         boolean isRunning = true;
 
-        private double gameTime = 40.0; // Durasi Game 3 Menit
+        private double gameTime = 60.0; // Durasi Game 3 Menit
         private boolean isGameOver = false;
 
         private double gameOverDelayTimer = -1;
@@ -127,7 +127,7 @@ public class SimpleTestServer {
         // [FITUR LAMA: FORCE RESET]
         public synchronized void restartGame() {
             System.out.println("[ROOM " + name + "] RESTARTING...");
-            this.gameTime = 40.0;
+            this.gameTime = 60.0;
             this.isGameOver = false;
             this.gameOverDelayTimer = -1;
             this.pendingGameOverMsg = "";
@@ -579,16 +579,56 @@ public void run() {
                         SimpleTestServer.broadcastRoomList(); joinRoom(newRoom);
                     }
                 } else if (command.equals("JOIN_ROOM")) {
-                    String name = parts[1]; String passInput = parts.length > 2 ? parts[2] : "";
+                    String name = parts[1];
+                    String passInput = parts.length > 2 ? parts[2] : "";
                     Room room = rooms.get(name);
                     if (room != null) {
-                        if (room.isPrivate && !room.password.equals(passInput)) send("ERROR;Wrong Password");
-                        else joinRoom(room);
+                        // --- [UPDATE] CEK KAPASITAS ---
+                        if (room.clients.size() >= 4) {
+                            send("ERROR;Room Full");
+                        } 
+                        // --- CEK PASSWORD ---
+                        else if (room.isPrivate && !room.password.equals(passInput)) {
+                            send("ERROR;Wrong Password");
+                        } else {
+                            joinRoom(room);
+                        }
                     }
-                } else if (command.equals("LEAVE_ROOM")) {
+                } // --- [BARU] FITUR KICK PLAYER ---
+                else if (command.equals("KICK_PLAYER") && currentRoom != null) {
+                    try {
+                        int targetId = Integer.parseInt(parts[1]);
+                        
+                        // Validasi: Hanya Host yang boleh kick
+                        if (currentRoom.host == this) {
+                            ClientHandler target = null;
+                            // Cari object ClientHandler milik target
+                            for (ClientHandler c : currentRoom.clients) {
+                                if (c.playerId == targetId) {
+                                    target = c;
+                                    break;
+                                }
+                            }
+                            
+                            // Jika ketemu dan target bukan diri sendiri
+                            if (target != null && target != this) {
+                                target.send("KICKED"); // Kirim sinyal ke client target
+                                currentRoom.removePlayer(target, targetId); // Hapus dari logic room
+                                
+                                // Reset status target agar kembali ke lobby server
+                                target.currentRoom = null;
+                                lobbyClients.add(target);
+                                target.sendRoomList(); // Refresh lobby ui target
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Error kicking player: " + e.getMessage());
+                    }
+                }
+                 else if (command.equals("LEAVE_ROOM")) {
                     if (currentRoom != null) { currentRoom.removePlayer(this, playerId); currentRoom = null; lobbyClients.add(this); sendRoomList(); }
                 } else if (command.equals("START_GAME") && currentRoom != null) {
-                    if (currentRoom.host == this && currentRoom.clients.size() >= 1) {
+                    if (currentRoom.host == this && currentRoom.clients.size() >= 2) {
                          // FORCE RESET SETIAP KALI START
                          new Thread(() -> {
                             currentRoom.restartGame(); 
