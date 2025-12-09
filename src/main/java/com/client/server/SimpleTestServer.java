@@ -164,115 +164,125 @@ public class SimpleTestServer {
             for (ClientHandler c : clients) c.send(msg);
         }
 
-        @Override
-        public void run() {
-            long lastTime = System.nanoTime();
+@Override
+public void run() {
+    long lastTime = System.nanoTime();
 
-            while (isRunning) {
-                try {
-                    long now = System.nanoTime();
-                    double dt = (now - lastTime) / 1_000_000_000.0;
-                    lastTime = now;
+    while (isRunning) {
+        try {
+            long now = System.nanoTime();
+            double dt = (now - lastTime) / 1_000_000_000.0; // detik
+            lastTime = now;
 
-                    if (dt > 0.05) dt = 0.05; 
-                    Thread.sleep(16); 
+            // Batasi dt maksimal (proteksi lag spike)
+            if (dt > 0.1) dt = 0.1;
 
-                    if (!gameStarted || clients.isEmpty() || collisionHandler == null) continue;
+            // Jika belum mulai atau belum siap, skip update (tapi tetap broadcast)
+            if (!gameStarted || clients.isEmpty() || collisionHandler == null) {
+                Thread.sleep(1); // hemat CPU
+                continue;
+            }
 
-                    // [FITUR LAMA: DELAY GAME OVER]
-                    if (isGameOver) {
-                        if (gameOverDelayTimer > 0) {
-                            gameOverDelayTimer -= dt;
-                            if (gameOverDelayTimer <= 0) {
-                                broadcast(pendingGameOverMsg);
-                                gameOverDelayTimer = -1; 
-                            }
-                        }
-                    }
-
-                    if (!isGameOver) {
-                        gameTime -= dt;
-                        
-                        // [FITUR BARU: UPDATE ARENA]
-                        if (arena != null) arena.update(dt, gameTime, players);
-
-                        long aliveCount = players.stream().filter(p -> !p.dead).count();
-
-                        if (gameTime <= 0) {
-                            gameTime = 0;
-                            triggerGameOver("SURVIVORS");
-                        } 
-                        else if (gameStarted && players.size() > 1 && aliveCount <= 1) {
-                            triggerGameOver("WINNER");
-                        }
-                    }
-
-                    for (Bomb b : bombs) b.tick();
-                    bombs.removeIf(b -> b.exploded);
-
-                    double multiplier = dt * 60.0;
-
-                    for (PlayerState p : players) {
-                        // [FITUR LAMA: DEAD TIMER UNTUK ANIMASI MATI]
-                        if (p.dead) continue; // Physics skip, tapi broadcast tetap lanjut di bawah
-
-                        if (p.speedTimer > 0) {
-                            p.speedTimer -= dt;
-                            if (p.speedTimer <= 0) { p.speed = p.DEFAULT_SPEED; p.speedTimer = 0; }
-                        }
-
-                        double nextX = p.x;
-                        double nextY = p.y;
-                        double moveAmt = p.speed * multiplier;
-
-                        if (p.left)  nextX -= moveAmt;
-                        if (p.right) nextX += moveAmt;
-                        if (p.up)    nextY -= moveAmt;
-                        if (p.down)  nextY += moveAmt;
-
-                        boolean collideMapX = collisionHandler.checkCollision(nextX, p.y);
-                        boolean collidePlayerX = collisionHandler.checkPlayerCollision(nextX, p.y, p, players);
-                        if (!collideMapX && !collidePlayerX) p.x = nextX;
-
-                        boolean collideMapY = collisionHandler.checkCollision(p.x, nextY);
-                        boolean collidePlayerY = collisionHandler.checkPlayerCollision(p.x, nextY, p, players);
-                        if (!collideMapY && !collidePlayerY) p.y = nextY;
-
-                        p.updateAnimLogic();
-                        checkItemPickup(p);
-                    }
-
-                    StringBuilder sb = new StringBuilder("STATE;");
-                    sb.append((int) Math.ceil(gameTime)).append(";");
-
-                    for (int i = 0; i < players.size(); i++) {
-                        PlayerState p = players.get(i);
-                        
-                        // [FITUR LAMA PENTING: DEAD ANIMATION DELAY]
-                        // Jika mati, biarkan dikirim selama 1.5 detik agar animasi jalan
-                        if (p.dead) {
-                            p.deadTimer += dt;
-                            if (p.deadTimer > 0.9){ // Setelah 1.5s, baru stop kirim
-                                continue; 
-                            }
-                        }
-
-                        sb.append(p.id).append(",")
-                                .append((int) p.x).append(",")
-                                .append((int) p.y).append(",")
-                                .append(p.currentState).append(",")
-                                .append(p.currentDir);
-                        if (i < players.size() - 1) sb.append("#");
-                    }
-                    sb.append("|||");
-                    broadcast(sb.toString());
-
-                } catch (Exception e) {
-                    System.err.println("Game Loop Error: " + e.getMessage());
+            // --- GAME LOGIC (semua berbasis detik) ---
+            
+            // Game over delay
+            if (isGameOver && gameOverDelayTimer > 0) {
+                gameOverDelayTimer -= dt;
+                if (gameOverDelayTimer <= 0) {
+                    broadcast(pendingGameOverMsg);
+                    gameOverDelayTimer = -1;
                 }
             }
-        }
 
+            // Update utama hanya jika game sedang berjalan
+            if (!isGameOver) {
+                gameTime -= dt;
+
+                // Arena shrink
+                if (arena != null) arena.update(dt, gameTime, players);
+
+                // Cek akhir game
+                long aliveCount = players.stream().filter(p -> !p.dead).count();
+                if (gameTime <= 0) {
+                    gameTime = 0;
+                    triggerGameOver("SURVIVORS");
+                } else if (players.size() > 1 && aliveCount <= 1) {
+                    triggerGameOver("WINNER");
+                }
+            }
+
+            // Bom (timer dalam detik)
+            for (Bomb b : bombs) b.tick(dt);
+            bombs.removeIf(b -> b.exploded);
+
+            // Player movement (speed dalam pixel/detik)
+            for (PlayerState p : players) {
+                if (p.dead) continue;
+
+                // Speed-up timer
+                if (p.speedTimer > 0) {
+                    p.speedTimer -= dt;
+                    if (p.speedTimer <= 0) {
+                        p.speed = p.DEFAULT_SPEED;
+                        p.speedTimer = 0;
+                    }
+                }
+
+                // ✅ GERAKAN: speed (px/detik) × dt (detik) = jarak (px)
+                double moveAmt = p.speed * dt;
+
+                double nextX = p.x;
+                double nextY = p.y;
+
+                if (p.left)  nextX -= moveAmt;
+                if (p.right) nextX += moveAmt;
+                if (p.up)    nextY -= moveAmt;
+                if (p.down)  nextY += moveAmt;
+
+                // Collision check
+                if (!collisionHandler.checkCollision(nextX, p.y) &&
+                    !collisionHandler.checkPlayerCollision(nextX, p.y, p, players)) {
+                    p.x = nextX;
+                }
+                if (!collisionHandler.checkCollision(p.x, nextY) &&
+                    !collisionHandler.checkPlayerCollision(p.x, nextY, p, players)) {
+                    p.y = nextY;
+                }
+
+                p.updateAnimLogic();
+                checkItemPickup(p);
+            }
+
+            // --- BROADCAST STATE ---
+            StringBuilder sb = new StringBuilder("STATE;");
+            sb.append((int) Math.ceil(gameTime)).append(";");
+
+            for (int i = 0; i < players.size(); i++) {
+                PlayerState p = players.get(i);
+                if (p.dead) {
+                    p.deadTimer += dt;
+                    if (p.deadTimer > 0.9) continue; // stop kirim setelah 0.9 detik
+                }
+
+                sb.append(p.id).append(",")
+                  .append((int) p.x).append(",")
+                  .append((int) p.y).append(",")
+                  .append(p.currentState).append(",")
+                  .append(p.currentDir);
+                if (i < players.size() - 1) sb.append("#");
+            }
+            sb.append("|||");
+            broadcast(sb.toString());
+
+            // Opsional: throttle broadcast biar tidak 1000+ paket/detik
+            // (client biasanya 30~60 FPS, jadi 30~60 update/detik cukup)
+            Thread.sleep(16); // ~60 update/detik
+
+        } catch (Exception e) {
+            System.err.println("Game Loop Error: " + e.getMessage());
+        }
+    }
+}
         private void triggerGameOver(String type) {
             isGameOver = true;
             gameOverDelayTimer = 2.0; 
@@ -366,13 +376,13 @@ public class SimpleTestServer {
         private int bottom;
 
         // Jadwal Shrink (Detik sisa waktu)
-        private final double[] shrinkTimes = { 150.0, 120.0, 90.0, 60.0, 30.0 };
+        private final double[] shrinkTimes = { 30.0, 20.0, 10.0, 10.0, 5.0 };
         private final String[] shrinkPattern = { "LR", "TB", "LR", "TB", "LR" }; 
         private int currentStep = 0;
 
         private boolean isShrinking = false; 
         private double shrinkAnimTimer = 0;
-        private static final double SHRINK_WARNING_DURATION = 3.0; // Lama Warning 5s
+        private static final double SHRINK_WARNING_DURATION = 5.0; // Lama Warning 5s
 
         public Arena(int[][] map, Room room) {
             this.map = map;
@@ -460,20 +470,29 @@ public class SimpleTestServer {
     // ===================== CLASS BOMB =======================
     static class Bomb {
         int x, y, ownerId, range;
-        int timer = 60; 
+        double timer = 2.0; 
         boolean exploded = false;
         boolean isSolid = false;
-        int solidDelay = 15; 
+        double solidDelay = 0.5; 
         Room room;
 
         public Bomb(int x, int y, int ownerId, int range, Room room) {
             this.x = x; this.y = y; this.ownerId = ownerId; this.range = range; this.room = room;
         }
 
-        public void tick() {
+        public void tick(double dt) {
             if (exploded) return;
-            if (solidDelay > 0) { solidDelay--; if (solidDelay <= 0) isSolid = true; }
-            timer--; if (timer <= 0) explode();
+            
+            if (solidDelay > 0) {
+                solidDelay -= dt;
+                if (solidDelay <= 0) {
+                    isSolid = true;
+                    solidDelay = 0;
+                }
+            }
+            
+            timer -= dt;
+            if (timer <= 0) explode();
         }
 
         private void explode() {
@@ -666,7 +685,7 @@ public class SimpleTestServer {
         // [FITUR LAMA YANG DIBALIKIN] Timer animasi mati
         double deadTimer = 0; 
         
-        final int DEFAULT_MAX_BOMBS = 1; final int DEFAULT_RANGE = 2; final double DEFAULT_SPEED = 3.0;
+        final int DEFAULT_MAX_BOMBS = 1; final int DEFAULT_RANGE = 2; final double DEFAULT_SPEED = 100.0;
         int activeBombs = 0; double speed = DEFAULT_SPEED; int bonusBombStock = 0; boolean hasFirePowerUp = false; double speedTimer = 0; 
         public PlayerState(int id, double x, double y) { this.id = id; this.x = x; this.y = y; }
         public void updateAnimLogic() {
